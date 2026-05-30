@@ -1,0 +1,38 @@
+body {
+    font-family: 'DM Sans', 'Noto Sans Malayalam', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.malayalam {
+    font-family: 'Noto Sans Malayalam', 'DM Sans', sans-serif;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
+
+/* Cards */
+.card-delivered {
+    border-left: 4px solid #2E7D32;
+    background: linear-gradient(to right, #f0fdf4, #ffffff);
+}
+.card-pending {
+    border-left: 4px solid #F59E0B;
+    background: linear-gradient(to right, #fffbeb, #ffffff);
+}
+
+/* Animations */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+    animation: slideUp 0.25s ease-out forwards;
+}
+
+/* Suggestion hover */
+.suggestion-item:hover {
+    background: #f0fdf4;
+}

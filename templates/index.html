@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>റേഷൻ ഉണ്ടോ?</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kerala: {
+                            gold: '#D4A843',
+                            green: '#1B5E20',
+                            darkgreen: '#0D3B14',
+                            leaf: '#2E7D32',
+                            cream: '#FAFAF6',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-kerala-cream min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-kerala-darkgreen text-white">
+        <div class="max-w-3xl mx-auto px-4 py-6 sm:py-8 text-center">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight malayalam">റേഷൻ <span class="text-kerala-gold">ഉണ്ടോ?</span></h1>
+            <p class="text-green-200/90 text-sm mt-2 malayalam font-medium px-2">നിങ്ങളുടെ റേഷൻ കടയിൽ സ്റ്റോക്ക് എത്തിയോ എന്നറിയാം</p>
+            <p class="text-green-400/60 text-[10px] sm:text-xs mt-1 tracking-wide">RATIONUNDO · KERALA STOCK DELIVERY TRACKER</p>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 -mt-6 flex-1 w-full">
+        <!-- Search Card -->
+        <div id="search-container" class="relative">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
+                <div class="relative">
+                    <input
+                        id="search-input"
+                        type="text"
+                        placeholder="കടയുടെ നമ്പർ, പിൻകോഡ് അല്ലെങ്കിൽ സ്ഥലം..."
+                        autocomplete="off"
+                        class="w-full px-5 py-4 rounded-xl bg-gray-50/80 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-kerala-green/20 focus:bg-white transition-all text-[15px]"
+                        aria-label="Search by shop number"
+                        aria-controls="suggestions"
+                        aria-autocomplete="list"
+                    >
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                        <svg class="h-5 w-5 text-kerala-green/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Autocomplete -->
+            <div id="suggestions" class="hidden absolute z-10 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden max-h-72 overflow-y-auto" role="listbox">
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="flex items-center gap-3 my-5">
+            <div class="flex-1 h-px bg-gray-200"></div>
+            <span class="text-xs text-gray-400 malayalam">അല്ലെങ്കിൽ കട കണ്ടെത്തുക</span>
+            <div class="flex-1 h-px bg-gray-200"></div>
+        </div>
+
+        <!-- Browse: District -> Taluk -> Shop -->
+        <div id="browse" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+            <div>
+                <label class="text-xs font-semibold text-gray-500 malayalam">ജില്ല തിരഞ്ഞെടുക്കുക</label>
+                <select id="sel-district" class="mt-1 w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-kerala-green/20 malayalam">
+                    <option value="">— ജില്ല —</option>
+                </select>
+            </div>
+            <div id="taluk-wrap" class="hidden">
+                <label class="text-xs font-semibold text-gray-500 malayalam">താലൂക്ക് / ഓഫീസ്</label>
+                <select id="sel-taluk" class="mt-1 w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-kerala-green/20">
+                    <option value="">— താലൂക്ക് —</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <section id="results" class="hidden mt-6 space-y-3 pb-12" aria-live="polite">
+        </section>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="mt-10 text-center">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center max-w-lg mx-auto">
+                <div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-kerala-darkgreen tabular-nums" id="stat-districts">0</div>
+                    <div class="text-xs text-gray-500 mt-1 font-medium malayalam">ജില്ലകൾ</div>
+                </div>
+                <div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-kerala-darkgreen tabular-nums" id="stat-shops">0</div>
+                    <div class="text-xs text-gray-500 mt-1 font-medium malayalam">റേഷൻ കടകൾ</div>
+                </div>
+                <div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-kerala-darkgreen tabular-nums" id="stat-pincodes">0</div>
+                    <div class="text-xs text-gray-500 mt-1 font-medium malayalam">പിൻകോഡുകൾ</div>
+                </div>
+                <div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-kerala-green tabular-nums" id="stat-delivered">0</div>
+                    <div class="text-xs text-gray-500 mt-1 font-medium malayalam">സ്റ്റോക്ക് എത്തി</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-gray-200/60">
+        <div class="max-w-2xl mx-auto px-4 py-6 text-center space-y-2">
+            <p class="text-xs text-gray-500">
+                Data from <a href="https://epos.kerala.gov.in" target="_blank" rel="noopener" class="text-kerala-green hover:underline">epos.kerala.gov.in</a>
+                <span class="text-gray-300 mx-1">·</span>
+                Updated daily
+            </p>
+            <p class="text-[11px] text-red-500 malayalam max-w-md mx-auto leading-relaxed">
+                ചില കടകളുടെ വിവരങ്ങൾ ലഭ്യമായേക്കില്ല. ഏറ്റവും കൃത്യമായ വിവരങ്ങൾക്ക് നിങ്ങളുടെ റേഷൻ കടയുമായി ബന്ധപ്പെടുക.
+            </p>
+            <p class="text-[11px] text-red-500">
+                Some shop data may be unavailable or incomplete · Not affiliated with the Government of Kerala
+            </p>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
