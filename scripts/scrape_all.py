@@ -10,12 +10,13 @@ import os
 import logging
 from datetime import datetime, date
 
+import httpx
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 from app.models.models import RationShop, ShopStockStatus, StockItem
-from app.worker.scraper import fetch_shop_stock
+from app.worker.scraper import fetch_with_client, HEADERS
 from app.worker.tasks import get_target_month_year
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 engine = create_engine(settings.database_url.replace("+asyncpg", "+psycopg2"))
 Session = sessionmaker(engine)
 
-CONCURRENCY = int(os.getenv("SCRAPE_CONCURRENCY", "20"))
+CONCURRENCY = int(os.getenv("SCRAPE_CONCURRENCY", "30"))
 
 
 def cleanup_old_months(keep: int = 3):
@@ -87,10 +88,10 @@ def _upsert(shop_id: int, month_cycle: str, result: dict):
         db.commit()
 
 
-async def _scrape_one(sem: asyncio.Semaphore, shop_id: int, ard: str, month: int, year: int, month_cycle: str, counter: dict):
+async def _scrape_one(sem: asyncio.Semaphore, client: httpx.AsyncClient, shop_id: int, ard: str, month: int, year: int, month_cycle: str, counter: dict):
     async with sem:
         try:
-            result = await fetch_shop_stock(ard, month, year)
+            result = await fetch_with_client(client, ard, month, year)
             if result is not None:
                 _upsert(shop_id, month_cycle, result)
                 counter["ok"] += 1
@@ -139,10 +140,12 @@ async def main():
                 f"(skipped {len(done)} fully-received, concurrency={CONCURRENCY})")
 
     sem = asyncio.Semaphore(CONCURRENCY)
-    await asyncio.gather(*[
-        _scrape_one(sem, sid, ard, month, year, month_cycle, counter)
-        for sid, ard in shop_data
-    ])
+    limits = httpx.Limits(max_connections=CONCURRENCY, max_keepalive_connections=CONCURRENCY)
+    async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=30.0, limits=limits) as client:
+        await asyncio.gather(*[
+            _scrape_one(sem, client, sid, ard, month, year, month_cycle, counter)
+            for sid, ard in shop_data
+        ])
     logger.info(f"ALL DONE! {counter['ok']}/{counter['total']} scraped")
 
 

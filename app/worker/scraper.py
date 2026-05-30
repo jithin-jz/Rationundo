@@ -16,6 +16,26 @@ HEADERS = {
 }
 
 
+async def fetch_with_client(
+    client: httpx.AsyncClient, fps_id: str, month: int, year: int, jitter: tuple[float, float] = (0.3, 1.0)
+) -> dict | None:
+    """
+    Fetch stock for one shop reusing a shared client (keep-alive connection pool).
+    Much faster than fetch_shop_stock for bulk runs. Small jitter stays polite.
+    """
+    await asyncio.sleep(random.uniform(*jitter))
+    try:
+        resp = await client.post(BASE_URL, data={
+            "fps_id": fps_id, "month": str(month), "year": str(year), "rotype": "PDS",
+        })
+        if resp.status_code != 200:
+            return None
+        return _parse_stock_response(resp.text)
+    except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
+        logger.error(f"Network error for {fps_id}: {e}")
+        return None
+
+
 async def fetch_shop_stock(
     fps_id: str, month: int, year: int
 ) -> dict | None:
