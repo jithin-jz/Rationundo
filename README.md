@@ -1,76 +1,98 @@
-# RationUndo
+# RationUndo · റേഷൻ ഉണ്ടോ?
 
-Kerala ration shop stock delivery tracker — [rationundo.in](https://rationundo.in)
+Track ration shop (Fair Price Shop) stock delivery status for Kerala citizens — check if this month's commodities (rice, wheat, sugar, etc.) have arrived at your shop.
 
-## Quick Start
+🔗 Live: [rationundo.onrender.com](https://rationundo.onrender.com)
+
+## How it works
+
+- The official portal (`epos.kerala.gov.in`) is slow and indexes data only by District → Taluk → Shop number.
+- A daily scraper pulls all shop stock data into PostgreSQL.
+- The web app serves every user search from the local DB — **zero external calls at request time**, sub-200ms responses.
+
+```
+User → FastAPI → PostgreSQL (Supabase) → Response
+                       ↑
+   GitHub Actions (daily 2 AM IST) → httpx scraper → epos.kerala.gov.in
+```
+
+## Features
+
+- Search by **shop number**, **pincode**, or **place name** (fuzzy autocomplete via `pg_trgm`)
+- Browse by **District → Taluk → Shop**
+- Per-commodity allocated vs received quantities with progress bars
+- Malayalam-first UI
+- Covers all 14 districts · 14,000+ shops · 5,000+ pincodes
+
+## Tech stack
+
+- **Backend:** FastAPI + SQLAlchemy (async) + asyncpg
+- **Database:** PostgreSQL with `pg_trgm` (Supabase in production)
+- **Scraper:** httpx + BeautifulSoup, run as a daily GitHub Actions cron
+- **Frontend:** TailwindCSS, vanilla JS
+- **Hosting:** Render (web) + Supabase (DB) + GitHub Actions (scraper) — all free tier
+
+## Local development
 
 ```bash
-# Start Postgres & Redis
+# 1. Start local Postgres (port 5433) + Redis
 docker compose up -d
 
-# Install Python deps
+# 2. Install deps
 pip install -e .
 
-# Run migrations
+# 3. Create tables
 alembic upgrade head
 
-# Seed pincodes (place kerala_pincodes.csv in scripts/)
+# 4. Seed pincodes (downloads Kerala data from open dataset)
 python scripts/seed_pincodes.py
 
-# Discover shops (one-time, takes hours due to politeness delays)
+# 5. Discover all shops (one-time; District → Taluk → Shop)
 python scripts/discover_shops.py
 
-# Fuzzy-link shops to pincodes
+# 6. Link shops to pincodes (fuzzy match)
 python scripts/fuzzy_match.py
 
-# Run the API server
+# 7. Scrape stock data
+python scripts/scrape_all.py
+
+# 8. Run the server
 uvicorn app.main:app --reload --port 8000
-
-# Run Celery worker (separate terminal)
-celery -A app.worker.celery_app worker --loglevel=info
-
-# Run Celery beat scheduler (separate terminal)
-celery -A app.worker.celery_app beat --loglevel=info
 ```
 
-## Architecture
+Configure `.env` from `.env.example` (set `DATABASE_URL`).
 
-```
-User Search → FastAPI → PostgreSQL (cached data) → Response (<200ms)
-                                ↑
-         Celery Beat (every 3h) → Worker → httpx scraper → epos.kerala.gov.in
-```
+## Deployment
 
-Zero external calls during user interaction. All reads hit the local Postgres/Redis layer.
+See [DEPLOY.md](DEPLOY.md) for the full Supabase + Render + GitHub Actions setup.
 
-## Data Pipeline
+The scraper runs automatically every day at 2 AM IST via GitHub Actions
+(`.github/workflows/scrape.yml`). It refreshes pending/partial shops, skips
+fully-received ones, and prunes data older than 3 months.
 
-1. **Pincodes** — Seeded from national open dataset CSV
-2. **Shop Discovery** — One-time script scrapes all district/TSO/ARD mappings
-3. **Fuzzy Matching** — pg_trgm links shops to pincodes via location strings
-4. **Stock Updates** — Celery workers poll epos portal every 3 hours (6AM–9PM)
-
-## Project Structure
+## Project structure
 
 ```
 app/
-├── main.py           # FastAPI app entry
-├── config.py         # Settings via pydantic-settings
-├── database.py       # SQLAlchemy async engine
+├── main.py           # FastAPI app entry + /health
+├── config.py         # Settings (pydantic-settings)
+├── database.py       # Async engine (Supabase pooler-aware)
 ├── schemas.py        # Pydantic response models
 ├── api/routes.py     # API endpoints
-├── models/models.py  # SQLAlchemy ORM models
-└── worker/
-    ├── celery_app.py # Celery config & beat schedule
-    ├── scraper.py    # Async HTTP fetcher + parser
-    └── tasks.py      # Celery tasks
+└── models/models.py  # SQLAlchemy ORM models
 scripts/
-├── seed_pincodes.py  # Load pincode master data
-├── discover_shops.py # One-time shop registry builder
-└── fuzzy_match.py    # Link shops to pincodes
-templates/
-└── index.html        # Single-page UI
-static/
-├── style.css
-└── app.js            # Frontend logic
+├── seed_pincodes.py    # Load pincode master data
+├── discover_shops.py   # One-time shop registry builder
+├── fuzzy_match.py      # Link shops to pincodes
+├── scrape_all.py       # Daily stock scraper (used by CI cron)
+├── sync_to_supabase.py # One-time local → Supabase migration
+└── verify.py           # DB + API smoke test
+templates/index.html    # Single-page UI
+static/                 # app.js, style.css, favicon.svg
 ```
+
+## Disclaimer
+
+Not affiliated with the Government of Kerala. Data sourced from the public
+`epos.kerala.gov.in` portal. Some shop data may be unavailable or incomplete —
+contact your ration shop for the most accurate information.
