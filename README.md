@@ -96,3 +96,7 @@ static/                 # app.js, style.css, favicon.svg
 Not affiliated with the Government of Kerala. Data sourced from the public
 `epos.kerala.gov.in` portal. Some shop data may be unavailable or incomplete —
 contact your ration shop for the most accurate information.
+
+## License
+
+[MIT](LICENSE) © 2026 Jithin
