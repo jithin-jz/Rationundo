@@ -24,6 +24,10 @@ async def autocomplete(
     q = q.strip()
     suggestions: list[Suggestion] = []
 
+    # Only suggest pincodes that actually have shops linked, so a suggestion
+    # never dead-ends on an empty result page.
+    has_shops = select(RationShop.id).where(RationShop.pincode_id == Pincode.id).exists()
+
     if q.isdigit():
         # Match shop (ARD/FPS) numbers directly
         shop_stmt = select(RationShop).where(RationShop.ard_number.startswith(q)).limit(8)
@@ -34,8 +38,8 @@ async def autocomplete(
                 label=f"കട നം. {s.ard_number}",
                 sublabel=f"{s.dealer_name or ''} · {s.district}",
             ))
-        # Also match pincodes
-        pin_stmt = select(Pincode).where(Pincode.pincode.startswith(q)).limit(4)
+        # Also match pincodes (only those with shops)
+        pin_stmt = select(Pincode).where(Pincode.pincode.startswith(q), has_shops).limit(4)
         pins = (await db.execute(pin_stmt)).scalars().all()
         for p in pins:
             suggestions.append(Suggestion(
@@ -44,10 +48,10 @@ async def autocomplete(
                 sublabel=f"{p.pincode} · {p.district}",
             ))
     else:
-        # Fuzzy place-name search
+        # Fuzzy place-name search (only places with shops)
         pin_stmt = (
             select(Pincode)
-            .where(func.similarity(Pincode.post_office_name, q) > 0.2)
+            .where(func.similarity(Pincode.post_office_name, q) > 0.2, has_shops)
             .order_by(func.similarity(Pincode.post_office_name, q).desc())
             .limit(10)
         )
