@@ -32,10 +32,42 @@ RELINK = text(f"""
 """)
 
 
+# Trigram fuzzy match is wrong for a handful of TSO tokens whose pincode uses a
+# different spelling (Thirur/Tirur) or whose nearest trigram match is an
+# unrelated village. Since shop locations come at TSO granularity (only ~77
+# distinct tokens), these are pinned explicitly: (token, district) -> pincode.
+OVERRIDES = {
+    ("Kunnathunadu", "Ernakulam"): "683542",      # -> Perumbavoor H.O
+    ("North Paravoor", "Ernakulam"): "683513",     # -> Paravur S.O
+    ("Hosdurg", "Kasargod"): "671315",             # -> Kanhangad H.O
+    ("Ernad", "Malappuram"): "676121",             # -> Manjeri H.O
+    ("Thirur", "Malappuram"): "676101",            # -> Tirur H.O
+    ("Adoor", "Pathanamthitta"): "691523",         # -> Adur H.O
+    ("Mukundapuram", "Thrissur"): "680121",        # -> Irinjalakuda H.O
+    ("Thalappilly", "Thrissur"): "680623",         # -> Wadakkancheri RS S.O
+}
+
+OVERRIDE_SQL = text("""
+    UPDATE ration_shops s
+    SET pincode_id = (
+        SELECT p.id FROM pincodes p
+        WHERE p.pincode = :pin AND lower(p.district) = lower(:dist)
+        ORDER BY p.id LIMIT 1
+    )
+    WHERE lower(s.district) = lower(:dist)
+      AND replace(split_part(s.location_raw_string, ',', 1), '_', ' ') = :token
+""")
+
+
 def match_shops_to_pincodes(threshold: float = 0.2):
     with sync_engine.begin() as conn:
         res = conn.execute(RELINK, {"threshold": threshold})
         logger.info(f"Re-linked shops to pincodes (rows updated: {res.rowcount})")
+        fixed = 0
+        for (token, dist), pin in OVERRIDES.items():
+            r = conn.execute(OVERRIDE_SQL, {"token": token, "dist": dist, "pin": pin})
+            fixed += r.rowcount
+        logger.info(f"Applied {len(OVERRIDES)} overrides ({fixed} shops repinned)")
 
 
 if __name__ == "__main__":
