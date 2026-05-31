@@ -123,7 +123,36 @@ function renderResults(data) {
     // Sort: delivered first
     const sorted = [...data.shops].sort((a, b) => b.is_stock_delivered - a.is_stock_delivered);
 
-    html += sorted.map((shop, i) => {
+    html += `<div id="feed" class="space-y-3"></div><div id="feed-sentinel" class="h-px"></div>`;
+    resultsSection.innerHTML = html;
+    startFeed(sorted);
+}
+
+// ===== Instagram-like infinite scroll feed =====
+let feedState = null;
+let feedObserver = null;
+
+function startFeed(shops) {
+    feedState = { shops, rendered: 0, batch: 10, el: document.getElementById('feed') };
+    appendBatch();
+    if (feedObserver) feedObserver.disconnect();
+    feedObserver = new IntersectionObserver((e) => { if (e[0].isIntersecting) appendBatch(); }, { rootMargin: '300px' });
+    feedObserver.observe(document.getElementById('feed-sentinel'));
+}
+
+function appendBatch() {
+    if (!feedState) return;
+    const { shops, rendered, batch, el } = feedState;
+    const slice = shops.slice(rendered, rendered + batch);
+    el.insertAdjacentHTML('beforeend', slice.map((shop, k) => renderShopCard(shop, k)).join(''));
+    feedState.rendered += slice.length;
+    if (feedState.rendered >= shops.length) {
+        feedObserver?.disconnect();
+        document.getElementById('feed-sentinel')?.remove();
+    }
+}
+
+function renderShopCard(shop, i) {
         const isDelivered = shop.is_stock_delivered;
         const cardClass = isDelivered ? 'card-delivered' : 'card-pending';
 
@@ -180,9 +209,6 @@ function renderResults(data) {
                 ${lastChecked ? `<p class="mt-2 text-[11px] text-gray-400">അവസാന അപ്‌ഡേറ്റ്: ${lastChecked}</p>` : ''}
             </div>
         `;
-    }).join('');
-
-    resultsSection.innerHTML = html;
 }
 
 // Close suggestions on outside click
