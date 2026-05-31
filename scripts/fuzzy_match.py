@@ -52,7 +52,11 @@ OVERRIDE_SQL = text("""
     SET pincode_id = (
         SELECT p.id FROM pincodes p
         WHERE p.pincode = :pin AND lower(p.district) = lower(:dist)
-        ORDER BY p.id LIMIT 1
+        -- prefer the recognisable office (H.O / S.O) over a random B.O sharing
+        -- the pincode, so its name is also searchable in autocomplete
+        ORDER BY (p.post_office_name ILIKE '%H.O%') DESC,
+                 (p.post_office_name ILIKE '%S.O%') DESC, p.id
+        LIMIT 1
     )
     WHERE lower(s.district) = lower(:dist)
       AND replace(split_part(s.location_raw_string, ',', 1), '_', ' ') = :token

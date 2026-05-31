@@ -2,7 +2,7 @@ import time
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
@@ -14,54 +14,60 @@ router = APIRouter(prefix="/api")
 _stats_cache: dict = {"data": None, "ts": 0.0}
 _STATS_TTL = 300  # seconds; stats only change once per daily scrape
 
+# The searchable unit is the shop LOCALITY (taluk), not the 5k-row postal table:
+# shop data only exists at taluk granularity. So place autocomplete searches the
+# distinct localities that actually have shops, matching the query against both
+# the locality token (split from location_raw_string) and the linked post-office
+# name. Keyed by pincode_id so a pick always resolves to shops.
+_TOKEN = "replace(split_part(s.location_raw_string, ',', 1), '_', ' ')"
+_SCORE = f"greatest(similarity({_TOKEN}, :q), similarity(p.post_office_name, :q))"
+
+PLACE_BY_NAME = text(f"""
+    SELECT pincode_id, token, pincode, district FROM (
+        SELECT DISTINCT ON (s.pincode_id)
+            s.pincode_id, {_TOKEN} AS token, p.pincode, p.district, {_SCORE} AS score
+        FROM ration_shops s JOIN pincodes p ON p.id = s.pincode_id
+        WHERE {_SCORE} > 0.2
+        ORDER BY s.pincode_id, score DESC
+    ) t ORDER BY score DESC LIMIT 10
+""")
+
+PLACE_BY_PIN = text(f"""
+    SELECT DISTINCT ON (s.pincode_id) s.pincode_id, {_TOKEN} AS token, p.pincode, p.district
+    FROM ration_shops s JOIN pincodes p ON p.id = s.pincode_id
+    WHERE p.pincode LIKE :q || '%'
+    ORDER BY s.pincode_id LIMIT 6
+""")
+
 
 @router.get("/autocomplete", response_model=list[Suggestion])
 async def autocomplete(
     q: str = Query(min_length=2, max_length=50),
     db: AsyncSession = Depends(get_db),
 ):
-    """Autocomplete: if numeric, match shop numbers (FPS) and pincodes; else fuzzy place names."""
+    """Autocomplete: numeric -> shop (FPS) numbers + pincodes; else fuzzy locality names."""
     q = q.strip()
     suggestions: list[Suggestion] = []
 
-    # Only suggest pincodes that actually have shops linked, so a suggestion
-    # never dead-ends on an empty result page.
-    has_shops = select(RationShop.id).where(RationShop.pincode_id == Pincode.id).exists()
-
     if q.isdigit():
-        # Match shop (ARD/FPS) numbers directly
-        shop_stmt = select(RationShop).where(RationShop.ard_number.startswith(q)).limit(8)
-        shops = (await db.execute(shop_stmt)).scalars().all()
+        shops = (await db.execute(
+            select(RationShop).where(RationShop.ard_number.startswith(q)).limit(8)
+        )).scalars().all()
         for s in shops:
             suggestions.append(Suggestion(
                 type="shop", id=s.id,
                 label=f"കട നം. {s.ard_number}",
                 sublabel=f"{s.dealer_name or ''} · {s.district}",
             ))
-        # Also match pincodes (only those with shops)
-        pin_stmt = select(Pincode).where(Pincode.pincode.startswith(q), has_shops).limit(4)
-        pins = (await db.execute(pin_stmt)).scalars().all()
-        for p in pins:
-            suggestions.append(Suggestion(
-                type="place", id=p.id,
-                label=p.post_office_name,
-                sublabel=f"{p.pincode} · {p.district}",
-            ))
+        rows = (await db.execute(PLACE_BY_PIN, {"q": q})).all()
     else:
-        # Fuzzy place-name search (only places with shops)
-        pin_stmt = (
-            select(Pincode)
-            .where(func.similarity(Pincode.post_office_name, q) > 0.2, has_shops)
-            .order_by(func.similarity(Pincode.post_office_name, q).desc())
-            .limit(10)
-        )
-        pins = (await db.execute(pin_stmt)).scalars().all()
-        for p in pins:
-            suggestions.append(Suggestion(
-                type="place", id=p.id,
-                label=p.post_office_name,
-                sublabel=f"{p.pincode} · {p.district}",
-            ))
+        rows = (await db.execute(PLACE_BY_NAME, {"q": q})).all()
+
+    for pincode_id, token, pincode, district in rows:
+        suggestions.append(Suggestion(
+            type="place", id=pincode_id, label=token,
+            sublabel=f"{pincode} · {district}",
+        ))
 
     return suggestions
 
@@ -186,8 +192,14 @@ async def get_status(pincode_id: int, db: AsyncSession = Depends(get_db)):
     )
     shops = (await db.execute(stmt)).scalars().all()
 
+    # Header shows the shop locality (taluk), matching the suggestion label,
+    # rather than the postal-row name which may differ (e.g. "Ezhikkara B.O").
+    locality = pincode.post_office_name
+    if shops and shops[0].location_raw_string:
+        locality = shops[0].location_raw_string.split(",")[0].replace("_", " ")
+
     return SearchResponse(
         pincode=pincode.pincode,
-        post_office_name=pincode.post_office_name,
+        post_office_name=locality,
         shops=[_build_shop_out(s) for s in shops],
     )
