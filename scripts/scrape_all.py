@@ -8,6 +8,7 @@ Concurrency is configurable via SCRAPE_CONCURRENCY env (default 20).
 import asyncio
 import os
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, date
 
 import httpx
@@ -22,10 +23,14 @@ from app.worker.tasks import get_target_month_year
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
-engine = create_engine(settings.database_url.replace("+asyncpg", "+psycopg2"))
-Session = sessionmaker(engine)
-
 CONCURRENCY = int(os.getenv("SCRAPE_CONCURRENCY", "30"))
+
+engine = create_engine(
+    settings.database_url.replace("+asyncpg", "+psycopg2"),
+    pool_size=CONCURRENCY, max_overflow=5, pool_pre_ping=True,
+)
+Session = sessionmaker(engine)
+_db_pool = ThreadPoolExecutor(max_workers=CONCURRENCY)
 
 
 def cleanup_old_months(keep: int = 3):
@@ -93,7 +98,9 @@ async def _scrape_one(sem: asyncio.Semaphore, client: httpx.AsyncClient, shop_id
         try:
             result = await fetch_with_client(client, ard, month, year)
             if result is not None:
-                _upsert(shop_id, month_cycle, result)
+                await asyncio.get_running_loop().run_in_executor(
+                    _db_pool, _upsert, shop_id, month_cycle, result
+                )
                 counter["ok"] += 1
         except Exception as e:
             logger.error(f"{ard} error: {e}")
