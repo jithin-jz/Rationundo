@@ -1,0 +1,13 @@
+{
+  "name": "റേഷൻ ഉണ്ടോ? · RationUndo",
+  "short_name": "റേഷൻ ഉണ്ടോ?",
+  "description": "Kerala ration shop stock delivery tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF6",
+  "theme_color": "#0D3B14",
+  "lang": "ml",
+  "icons": [
+    { "src": "/static/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
