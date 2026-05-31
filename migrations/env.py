@@ -2,12 +2,17 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
+from app.config import settings
 from app.database import Base
 from app.models.models import *  # noqa: register all models
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Use the app's DATABASE_URL (e.g. Supabase) instead of the ini placeholder.
+# Alembic runs synchronously, so swap the asyncpg driver for psycopg2.
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg", "+psycopg2"))
 
 target_metadata = Base.metadata
 
