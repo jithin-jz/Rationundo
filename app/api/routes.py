@@ -23,9 +23,10 @@ _TOKEN = "replace(split_part(s.location_raw_string, ',', 1), '_', ' ')"
 _SCORE = f"greatest(similarity({_TOKEN}, :q), similarity(p.post_office_name, :q))"
 
 PLACE_BY_NAME = text(f"""
-    SELECT pincode_id, token, pincode, district FROM (
+    SELECT pincode_id, post_office, token, pincode, district FROM (
         SELECT DISTINCT ON (s.pincode_id)
-            s.pincode_id, {_TOKEN} AS token, p.pincode, p.district, {_SCORE} AS score
+            s.pincode_id, p.post_office_name AS post_office, {_TOKEN} AS token,
+            p.pincode, p.district, {_SCORE} AS score
         FROM ration_shops s JOIN pincodes p ON p.id = s.pincode_id
         WHERE {_SCORE} > 0.2
         ORDER BY s.pincode_id, score DESC
@@ -33,7 +34,8 @@ PLACE_BY_NAME = text(f"""
 """)
 
 PLACE_BY_PIN = text(f"""
-    SELECT DISTINCT ON (s.pincode_id) s.pincode_id, {_TOKEN} AS token, p.pincode, p.district
+    SELECT DISTINCT ON (s.pincode_id) s.pincode_id, p.post_office_name AS post_office,
+        {_TOKEN} AS token, p.pincode, p.district
     FROM ration_shops s JOIN pincodes p ON p.id = s.pincode_id
     WHERE p.pincode LIKE :q || '%'
     ORDER BY s.pincode_id LIMIT 6
@@ -63,10 +65,13 @@ async def autocomplete(
     else:
         rows = (await db.execute(PLACE_BY_NAME, {"q": q})).all()
 
-    for pincode_id, token, pincode, district in rows:
+    for pincode_id, post_office, token, pincode, district in rows:
+        # Label is the linked pincode's post office so name and pincode always
+        # agree; the taluk (token) goes in the sublabel for search context.
+        sub = f"{pincode} · {token}, {district}" if token.lower() not in post_office.lower() \
+            else f"{pincode} · {district}"
         suggestions.append(Suggestion(
-            type="place", id=pincode_id, label=token,
-            sublabel=f"{pincode} · {district}",
+            type="place", id=pincode_id, label=post_office, sublabel=sub,
         ))
 
     return suggestions
@@ -192,14 +197,16 @@ async def get_status(pincode_id: int, db: AsyncSession = Depends(get_db)):
     )
     shops = (await db.execute(stmt)).scalars().all()
 
-    # Header shows the shop locality (taluk), matching the suggestion label,
-    # rather than the postal-row name which may differ (e.g. "Ezhikkara B.O").
-    locality = pincode.post_office_name
+    # Header uses the pincode's post office (matches the suggestion label); add
+    # the taluk in parentheses when it differs, for locality context.
+    name = pincode.post_office_name
     if shops and shops[0].location_raw_string:
-        locality = shops[0].location_raw_string.split(",")[0].replace("_", " ")
+        taluk = shops[0].location_raw_string.split(",")[0].replace("_", " ")
+        if taluk.lower() not in name.lower():
+            name = f"{name} ({taluk})"
 
     return SearchResponse(
         pincode=pincode.pincode,
-        post_office_name=locality,
+        post_office_name=name,
         shops=[_build_shop_out(s) for s in shops],
     )
