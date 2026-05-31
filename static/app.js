@@ -50,6 +50,7 @@ function renderSuggestions(items) {
 }
 
 async function selectItem(type, id) {
+    history.replaceState(null, '', `?${type}=${id}`);
     suggestions.classList.add('hidden');
     emptyState.classList.add('hidden');
     resultsSection.innerHTML = `
@@ -96,9 +97,12 @@ function renderResults(data) {
         return;
     }
 
-    const delivered = data.shops.filter(s => s.is_stock_delivered).length;
+    const stateOf = s => s.delivery_state || (s.is_stock_delivered ? 'full' : 'none');
     const total = data.shops.length;
+    const delivered = data.shops.filter(s => stateOf(s) === 'full').length;
+    const partial = data.shops.filter(s => stateOf(s) === 'partial').length;
     const percentage = Math.round((delivered / total) * 100);
+    const partialNote = partial ? ` · ${partial} ഭാഗികം` : '';
 
     let html = `
         <!-- Summary Header -->
@@ -110,7 +114,7 @@ function renderResults(data) {
                 </div>
                 <div class="text-right">
                     <div class="text-3xl font-extrabold ${percentage > 70 ? 'text-kerala-green' : percentage > 30 ? 'text-amber-500' : 'text-red-500'}">${percentage}%</div>
-                    <div class="text-xs text-gray-500 mt-0.5">${delivered}/${total} സ്റ്റോക്ക് എത്തി</div>
+                    <div class="text-xs text-gray-500 mt-0.5">${delivered}/${total} സ്റ്റോക്ക് എത്തി${partialNote}</div>
                 </div>
             </div>
             <!-- Progress bar -->
@@ -120,8 +124,9 @@ function renderResults(data) {
         </div>
     `;
 
-    // Sort: delivered first
-    const sorted = [...data.shops].sort((a, b) => b.is_stock_delivered - a.is_stock_delivered);
+    // Sort: full delivered first, then partial, then none
+    const rank = { full: 0, partial: 1, none: 2 };
+    const sorted = [...data.shops].sort((a, b) => rank[stateOf(a)] - rank[stateOf(b)]);
 
     html += `<div id="feed" class="space-y-3"></div><div id="feed-sentinel" class="h-px"></div>`;
     resultsSection.innerHTML = html;
@@ -153,13 +158,18 @@ function appendBatch() {
 }
 
 function renderShopCard(shop, i) {
-        const isDelivered = shop.is_stock_delivered;
-        const cardClass = isDelivered ? 'card-delivered' : 'card-pending';
+        const state = shop.delivery_state || (shop.is_stock_delivered ? 'full' : 'none');
+        const cardClass = state === 'full' ? 'card-delivered' : state === 'partial' ? 'card-partial' : 'card-pending';
 
-        const statusHtml = isDelivered
+        const statusHtml = state === 'full'
             ? `<div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50">
                     <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
                     <span class="text-xs sm:text-sm font-semibold text-green-800 malayalam whitespace-nowrap">സ്റ്റോക്ക് എത്തി ✓</span>
+               </div>`
+            : state === 'partial'
+            ? `<div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
+                    <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                    <span class="text-xs sm:text-sm font-semibold text-amber-800 malayalam whitespace-nowrap">ഭാഗികമായി എത്തി</span>
                </div>`
             : `<div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
                     <div class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
@@ -281,6 +291,11 @@ function animateCount(el, target) {
             const el = document.getElementById(id);
             if (el) animateCount(el, val);
         }
+        const lu = document.getElementById('last-updated');
+        if (lu && s.last_updated) {
+            const d = new Date(s.last_updated);
+            lu.textContent = 'അവസാന അപ്ഡേറ്റ്: ' + d.toLocaleString('ml-IN', {timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'});
+        }
     } catch (e) {}
 })();
 
@@ -324,3 +339,11 @@ selTaluk.addEventListener('change', async () => {
     const shops = await resp.json();
     renderResults({ post_office_name: talukName, pincode: selDistrict.value, shops });
 });
+
+// Deep link: open ?shop=ID or ?place=ID directly on page load
+(() => {
+    const p = new URLSearchParams(location.search);
+    const shopId = p.get('shop'), placeId = p.get('place');
+    if (shopId) selectItem('shop', shopId);
+    else if (placeId) selectItem('place', placeId);
+})();

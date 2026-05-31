@@ -40,6 +40,11 @@ class RationShop(Base):
     pincode_rel = relationship("Pincode", back_populates="shops")
     stock_statuses = relationship("ShopStockStatus", back_populates="shop")
 
+    __table_args__ = (
+        Index("idx_shop_tso", "tso_code"),
+        Index("idx_shop_district", "district"),
+    )
+
 
 class ShopStockStatus(Base):
     __tablename__ = "shop_stock_status"

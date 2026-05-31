@@ -133,18 +133,33 @@ def get_fully_received_shop_ids(month_cycle: str) -> set[int]:
     return set(rows)
 
 
+def get_checked_today_shop_ids(month_cycle: str) -> set[int]:
+    """
+    Shop IDs already checked today for this cycle. Lets a re-run after a
+    timeout RESUME instead of restarting. Set SCRAPE_FORCE=1 to ignore.
+    """
+    if os.getenv("SCRAPE_FORCE") == "1":
+        return set()
+    with Session() as db:
+        rows = db.execute(text("""
+            SELECT shop_id FROM shop_stock_status
+            WHERE month_cycle = :mc AND last_checked_timestamp::date = CURRENT_DATE
+        """), {"mc": month_cycle}).scalars().all()
+    return set(rows)
+
+
 async def main():
     month, year, month_cycle = get_target_month_year()
     cleanup_old_months(keep=3)
-    done = get_fully_received_shop_ids(month_cycle)
+    skip = get_fully_received_shop_ids(month_cycle) | get_checked_today_shop_ids(month_cycle)
 
     with Session() as db:
-        shops = db.execute(select(RationShop)).scalars().all()
-        shop_data = [(s.id, s.ard_number) for s in shops if s.id not in done]
+        shops = db.execute(select(RationShop).order_by(RationShop.id)).scalars().all()
+        shop_data = [(s.id, s.ard_number) for s in shops if s.id not in skip]
 
     counter = {"done": 0, "ok": 0, "total": len(shop_data)}
     logger.info(f"Scraping {len(shop_data)} shops for {month_cycle} "
-                f"(skipped {len(done)} fully-received, concurrency={CONCURRENCY})")
+                f"(skipped {len(skip)} done/already-checked, concurrency={CONCURRENCY})")
 
     sem = asyncio.Semaphore(CONCURRENCY)
     limits = httpx.Limits(max_connections=CONCURRENCY, max_keepalive_connections=CONCURRENCY)

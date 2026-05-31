@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -8,6 +10,9 @@ from app.models.models import Pincode, RationShop, ShopStockStatus, StockItem
 from app.schemas import Suggestion, SearchResponse, ShopStatusOut, StockItemOut
 
 router = APIRouter(prefix="/api")
+
+_stats_cache: dict = {"data": None, "ts": 0.0}
+_STATS_TTL = 300  # seconds; stats only change once per daily scrape
 
 
 @router.get("/autocomplete", response_model=list[Suggestion])
@@ -59,7 +64,10 @@ async def autocomplete(
 
 @router.get("/stats")
 async def get_stats(db: AsyncSession = Depends(get_db)):
-    """Real counts for the landing page."""
+    """Real counts for the landing page. Cached for _STATS_TTL seconds."""
+    if _stats_cache["data"] and (time.time() - _stats_cache["ts"]) < _STATS_TTL:
+        return _stats_cache["data"]
+
     districts = (await db.execute(select(func.count(func.distinct(RationShop.district))))).scalar()
     shops = (await db.execute(select(func.count(RationShop.id)))).scalar()
     pincodes = (await db.execute(select(func.count(Pincode.id)))).scalar()
@@ -67,7 +75,15 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
         select(func.count(func.distinct(ShopStockStatus.shop_id)))
         .where(ShopStockStatus.is_stock_delivered == True)
     )).scalar()
-    return {"districts": districts, "shops": shops, "pincodes": pincodes, "delivered": delivered}
+    last_updated = (await db.execute(select(func.max(ShopStockStatus.last_checked_timestamp)))).scalar()
+
+    data = {
+        "districts": districts, "shops": shops, "pincodes": pincodes,
+        "delivered": delivered,
+        "last_updated": last_updated.isoformat() if last_updated else None,
+    }
+    _stats_cache.update(data=data, ts=time.time())
+    return data
 
 
 @router.get("/districts", response_model=list[str])
@@ -104,12 +120,19 @@ async def list_shops(tso_code: str, db: AsyncSession = Depends(get_db)):
 
 def _build_shop_out(shop: RationShop) -> ShopStatusOut:
     latest = max(shop.stock_statuses, key=lambda s: s.last_checked_timestamp, default=None) if shop.stock_statuses else None
+    items = list(latest.items if latest else [])
+    # 3-state: "full" (all allocated commodities received), "partial" (some), "none"
+    if items and any(i.received_quantity > 0 for i in items):
+        state = "full" if all(i.received_quantity >= i.allocated_quantity for i in items) else "partial"
+    else:
+        state = "none"
     return ShopStatusOut(
         ard_number=shop.ard_number,
         dealer_name=shop.dealer_name,
         district=shop.district,
         location=shop.location_raw_string,
         is_stock_delivered=latest.is_stock_delivered if latest else False,
+        delivery_state=state,
         last_checked=latest.last_checked_timestamp if latest else None,
         month_cycle=latest.month_cycle if latest else "",
         items=[
@@ -119,7 +142,7 @@ def _build_shop_out(shop: RationShop) -> ShopStatusOut:
                 received_quantity=i.received_quantity,
                 arrival_timestamp=i.arrival_timestamp,
             )
-            for i in (latest.items if latest else [])
+            for i in items
         ],
     )
 
