@@ -1,7 +1,9 @@
 """
 Link ration shops to pincodes using place-name fuzzy matching (pg_trgm).
 """
+
 import logging
+
 from sqlalchemy import create_engine, text
 
 from app.config import settings
@@ -19,7 +21,8 @@ _PLACE = "replace(split_part(s.location_raw_string, ',', 1), '_', ' ')"
 
 # Single set-based UPDATE: recomputes pincode_id for every shop (overwriting any
 # previous bad link). Shops with no match above threshold get NULL.
-RELINK = text(f"""
+RELINK = text(
+    f"""
     UPDATE ration_shops s
     SET pincode_id = (
         SELECT p.id FROM pincodes p
@@ -29,7 +32,8 @@ RELINK = text(f"""
         LIMIT 1
     )
     WHERE s.location_raw_string IS NOT NULL
-""")
+"""
+)
 
 
 # Trigram fuzzy match is wrong for a handful of TSO tokens whose pincode uses a
@@ -37,17 +41,18 @@ RELINK = text(f"""
 # unrelated village. Since shop locations come at TSO granularity (only ~77
 # distinct tokens), these are pinned explicitly: (token, district) -> pincode.
 OVERRIDES = {
-    ("Kunnathunadu", "Ernakulam"): "683542",      # -> Perumbavoor H.O
-    ("North Paravoor", "Ernakulam"): "683513",     # -> Paravur S.O
-    ("Hosdurg", "Kasargod"): "671315",             # -> Kanhangad H.O
-    ("Ernad", "Malappuram"): "676121",             # -> Manjeri H.O
-    ("Thirur", "Malappuram"): "676101",            # -> Tirur H.O
-    ("Adoor", "Pathanamthitta"): "691523",         # -> Adur H.O
-    ("Mukundapuram", "Thrissur"): "680121",        # -> Irinjalakuda H.O
-    ("Thalappilly", "Thrissur"): "680623",         # -> Wadakkancheri RS S.O
+    ("Kunnathunadu", "Ernakulam"): "683542",  # -> Perumbavoor H.O
+    ("North Paravoor", "Ernakulam"): "683513",  # -> Paravur S.O
+    ("Hosdurg", "Kasargod"): "671315",  # -> Kanhangad H.O
+    ("Ernad", "Malappuram"): "676121",  # -> Manjeri H.O
+    ("Thirur", "Malappuram"): "676101",  # -> Tirur H.O
+    ("Adoor", "Pathanamthitta"): "691523",  # -> Adur H.O
+    ("Mukundapuram", "Thrissur"): "680121",  # -> Irinjalakuda H.O
+    ("Thalappilly", "Thrissur"): "680623",  # -> Wadakkancheri RS S.O
 }
 
-OVERRIDE_SQL = text("""
+OVERRIDE_SQL = text(
+    """
     UPDATE ration_shops s
     SET pincode_id = (
         SELECT p.id FROM pincodes p
@@ -60,7 +65,8 @@ OVERRIDE_SQL = text("""
     )
     WHERE lower(s.district) = lower(:dist)
       AND replace(split_part(s.location_raw_string, ',', 1), '_', ' ') = :token
-""")
+"""
+)
 
 
 def match_shops_to_pincodes(threshold: float = 0.2):

@@ -1,4 +1,5 @@
 """Tests for the brittle epos.kerala.gov.in stock table parser."""
+
 from app.worker.scraper import _parse_stock_response
 
 
@@ -10,7 +11,8 @@ def _table(rows: str) -> str:
 def test_empty_or_malformed_returns_not_delivered():
     assert _parse_stock_response("") == {"is_delivered": False, "items": []}
     assert _parse_stock_response("<table><tr><td>only</td></tr></table>") == {
-        "is_delivered": False, "items": []
+        "is_delivered": False,
+        "items": [],
     }
 
 

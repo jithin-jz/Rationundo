@@ -8,10 +8,10 @@ Usage:
     # set DATABASE_URL in .env to your Supabase string, then:
     python scripts/sync_to_supabase.py
 """
-import os
+
 import logging
 
-from sqlalchemy import create_engine, text, select, insert
+from sqlalchemy import create_engine, insert, select, text
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
@@ -47,8 +47,7 @@ def copy_table(model):
     cols = [c.name for c in model.__table__.columns]
     with SrcSession() as src:
         rows = [
-            {c: getattr(obj, c) for c in cols}
-            for obj in src.execute(select(model)).scalars().all()
+            {c: getattr(obj, c) for c in cols} for obj in src.execute(select(model)).scalars().all()
         ]
     if not rows:
         log.info(f"{model.__tablename__}: 0 rows")
@@ -58,15 +57,17 @@ def copy_table(model):
         # Clear existing to make this idempotent
         tgt.execute(text(f"DELETE FROM {model.__tablename__}"))
         for i in range(0, len(rows), BATCH):
-            tgt.execute(insert(model.__table__), rows[i:i + BATCH])
+            tgt.execute(insert(model.__table__), rows[i : i + BATCH])
         tgt.commit()
 
     # Reset the id sequence to max(id)
     with tgt_engine.begin() as conn:
-        conn.execute(text(
-            f"SELECT setval(pg_get_serial_sequence('{model.__tablename__}', 'id'), "
-            f"COALESCE((SELECT MAX(id) FROM {model.__tablename__}), 1))"
-        ))
+        conn.execute(
+            text(
+                f"SELECT setval(pg_get_serial_sequence('{model.__tablename__}', 'id'), "
+                f"COALESCE((SELECT MAX(id) FROM {model.__tablename__}), 1))"
+            )
+        )
     log.info(f"{model.__tablename__}: copied {len(rows)} rows")
 
 

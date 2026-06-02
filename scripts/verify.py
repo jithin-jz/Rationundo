@@ -4,8 +4,9 @@ Checks DB connectivity, row counts, and the live API endpoints.
 
 Run AFTER starting the server:  uvicorn app.main:app --port 8000
 """
+
 import httpx
-from sqlalchemy import create_engine, select, func
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings

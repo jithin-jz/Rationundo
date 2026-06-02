@@ -5,11 +5,12 @@ month data is refreshed. Designed to run as a GitHub Actions cron job.
 
 Concurrency is configurable via SCRAPE_CONCURRENCY env (default 20).
 """
+
 import asyncio
-import os
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, date
+from datetime import date, datetime
 
 import httpx
 from sqlalchemy import create_engine, select, text
@@ -17,7 +18,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 from app.models.models import RationShop, ShopStockStatus, StockItem
-from app.worker.scraper import fetch_with_client, HEADERS
+from app.worker.scraper import HEADERS, fetch_with_client
 from app.worker.tasks import get_target_month_year
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,9 @@ CONCURRENCY = int(os.getenv("SCRAPE_CONCURRENCY", "30"))
 
 engine = create_engine(
     settings.database_url.replace("+asyncpg", "+psycopg2"),
-    pool_size=CONCURRENCY, max_overflow=5, pool_pre_ping=True,
+    pool_size=CONCURRENCY,
+    max_overflow=5,
+    pool_pre_ping=True,
 )
 Session = sessionmaker(engine)
 _db_pool = ThreadPoolExecutor(max_workers=CONCURRENCY)
@@ -49,15 +52,21 @@ def cleanup_old_months(keep: int = 3):
 
     with Session() as db:
         # Delete items then statuses for any month_cycle not in keep list
-        db.execute(text("""
+        db.execute(
+            text(
+                """
             DELETE FROM stock_items
             WHERE stock_status_id IN (
                 SELECT id FROM shop_stock_status WHERE month_cycle != ALL(:keep)
             )
-        """), {"keep": keep_cycles})
-        res = db.execute(text(
-            "DELETE FROM shop_stock_status WHERE month_cycle != ALL(:keep)"
-        ), {"keep": keep_cycles})
+        """
+            ),
+            {"keep": keep_cycles},
+        )
+        res = db.execute(
+            text("DELETE FROM shop_stock_status WHERE month_cycle != ALL(:keep)"),
+            {"keep": keep_cycles},
+        )
         db.commit()
         logger.info(f"Cleanup: kept {keep_cycles}, removed {res.rowcount} old status rows")
 
@@ -93,7 +102,16 @@ def _upsert(shop_id: int, month_cycle: str, result: dict):
         db.commit()
 
 
-async def _scrape_one(sem: asyncio.Semaphore, client: httpx.AsyncClient, shop_id: int, ard: str, month: int, year: int, month_cycle: str, counter: dict):
+async def _scrape_one(
+    sem: asyncio.Semaphore,
+    client: httpx.AsyncClient,
+    shop_id: int,
+    ard: str,
+    month: int,
+    year: int,
+    month_cycle: str,
+    counter: dict,
+):
     async with sem:
         try:
             result = await fetch_with_client(client, ard, month, year)
@@ -119,7 +137,10 @@ def get_fully_received_shop_ids(month_cycle: str) -> set[int]:
     with Session() as db:
         # Shops that have a status this month with at least one item,
         # and no item where received < allocated.
-        rows = db.execute(text("""
+        rows = (
+            db.execute(
+                text(
+                    """
             SELECT s.shop_id
             FROM shop_stock_status s
             WHERE s.month_cycle = :mc
@@ -129,7 +150,13 @@ def get_fully_received_shop_ids(month_cycle: str) -> set[int]:
                   WHERE i.stock_status_id = s.id
                     AND i.received_quantity < i.allocated_quantity
               )
-        """), {"mc": month_cycle}).scalars().all()
+        """
+                ),
+                {"mc": month_cycle},
+            )
+            .scalars()
+            .all()
+        )
     return set(rows)
 
 
@@ -141,10 +168,19 @@ def get_checked_today_shop_ids(month_cycle: str) -> set[int]:
     if os.getenv("SCRAPE_FORCE") == "1":
         return set()
     with Session() as db:
-        rows = db.execute(text("""
+        rows = (
+            db.execute(
+                text(
+                    """
             SELECT shop_id FROM shop_stock_status
             WHERE month_cycle = :mc AND last_checked_timestamp::date = CURRENT_DATE
-        """), {"mc": month_cycle}).scalars().all()
+        """
+                ),
+                {"mc": month_cycle},
+            )
+            .scalars()
+            .all()
+        )
     return set(rows)
 
 
@@ -158,16 +194,22 @@ async def main():
         shop_data = [(s.id, s.ard_number) for s in shops if s.id not in skip]
 
     counter = {"done": 0, "ok": 0, "total": len(shop_data)}
-    logger.info(f"Scraping {len(shop_data)} shops for {month_cycle} "
-                f"(skipped {len(skip)} done/already-checked, concurrency={CONCURRENCY})")
+    logger.info(
+        f"Scraping {len(shop_data)} shops for {month_cycle} "
+        f"(skipped {len(skip)} done/already-checked, concurrency={CONCURRENCY})"
+    )
 
     sem = asyncio.Semaphore(CONCURRENCY)
     limits = httpx.Limits(max_connections=CONCURRENCY, max_keepalive_connections=CONCURRENCY)
-    async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=30.0, limits=limits) as client:
-        await asyncio.gather(*[
-            _scrape_one(sem, client, sid, ard, month, year, month_cycle, counter)
-            for sid, ard in shop_data
-        ])
+    async with httpx.AsyncClient(
+        headers=HEADERS, follow_redirects=True, timeout=30.0, limits=limits
+    ) as client:
+        await asyncio.gather(
+            *[
+                _scrape_one(sem, client, sid, ard, month, year, month_cycle, counter)
+                for sid, ard in shop_data
+            ]
+        )
     logger.info(f"ALL DONE! {counter['ok']}/{counter['total']} scraped")
 
 

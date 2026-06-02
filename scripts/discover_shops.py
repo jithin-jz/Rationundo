@@ -2,9 +2,10 @@
 One-time script to discover all FPS shops from epos.kerala.gov.in.
 Uses the Stock Received Status drill-down: District -> Office/TSO -> FPS list.
 """
+
 import asyncio
-import random
 import logging
+import random
 
 import httpx
 from bs4 import BeautifulSoup
@@ -12,7 +13,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
-from app.models.models import RationShop, Base
+from app.models.models import Base, RationShop
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +23,7 @@ Session = sessionmaker(sync_engine)
 
 BASE = "https://epos.kerala.gov.in"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",  # noqa: E501
     "X-Requested-With": "XMLHttpRequest",
 }
 
@@ -45,11 +46,19 @@ async def get_districts(client: httpx.AsyncClient) -> list[tuple[str, str]]:
     return districts
 
 
-async def get_offices(client: httpx.AsyncClient, distcode: str, distname: str) -> list[tuple[str, str]]:
+async def get_offices(
+    client: httpx.AsyncClient, distcode: str, distname: str
+) -> list[tuple[str, str]]:
     """Get list of (office_code, office_name) for a district."""
     r = await client.post(
         f"{BASE}/Stock_Received_Status_Office.jsp",
-        data={"month": "5", "year": "2026", "rotype": "PDS", "distcode": distcode, "distname": distname},
+        data={
+            "month": "5",
+            "year": "2026",
+            "rotype": "PDS",
+            "distcode": distcode,
+            "distname": distname,
+        },
     )
     soup = BeautifulSoup(r.text, "lxml")
     offices = []
@@ -62,14 +71,20 @@ async def get_offices(client: httpx.AsyncClient, distcode: str, distname: str) -
     return offices
 
 
-async def get_fps_list(client: httpx.AsyncClient, distcode: str, distname: str, officecode: str, officename: str) -> list[str]:
+async def get_fps_list(
+    client: httpx.AsyncClient, distcode: str, distname: str, officecode: str, officename: str
+) -> list[str]:
     """Get list of FPS codes for a given office/TSO."""
     r = await client.post(
         f"{BASE}/Stock_Received_Status_FPS.jsp",
         data={
-            "month": "5", "year": "2026", "rotype": "PDS",
-            "distcode": distcode, "distname": distname,
-            "officecode": officecode, "officename": officename,
+            "month": "5",
+            "year": "2026",
+            "rotype": "PDS",
+            "distcode": distcode,
+            "distname": distname,
+            "officecode": officecode,
+            "officename": officename,
         },
     )
     soup = BeautifulSoup(r.text, "lxml")
@@ -100,7 +115,9 @@ async def discover_all_shops():
                 for officecode, officename in offices:
                     await asyncio.sleep(random.uniform(1.5, 3.0))
                     try:
-                        fps_codes = await get_fps_list(client, distcode, distname, officecode, officename)
+                        fps_codes = await get_fps_list(
+                            client, distcode, distname, officecode, officename
+                        )
                         logger.info(f"    {officename}: {len(fps_codes)} shops")
 
                         with Session() as db:
@@ -109,13 +126,15 @@ async def discover_all_shops():
                                     select(RationShop).where(RationShop.ard_number == code)
                                 ).scalar_one_or_none()
                                 if not existing:
-                                    db.add(RationShop(
-                                        ard_number=code,
-                                        dealer_name=officename,
-                                        district=distname,
-                                        tso_code=officecode,
-                                        location_raw_string=f"{officename}, {distname}",
-                                    ))
+                                    db.add(
+                                        RationShop(
+                                            ard_number=code,
+                                            dealer_name=officename,
+                                            district=distname,
+                                            tso_code=officecode,
+                                            location_raw_string=f"{officename}, {distname}",
+                                        )
+                                    )
                             db.commit()
 
                     except Exception as e:

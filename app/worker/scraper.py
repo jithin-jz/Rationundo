@@ -1,6 +1,6 @@
 import asyncio
-import random
 import logging
+import random
 from datetime import datetime
 
 import httpx
@@ -11,13 +11,17 @@ logger = logging.getLogger(__name__)
 BASE_URL = "https://epos.kerala.gov.in/Stock_Received_Shop_Wise_Details_Report.jsp"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",  # noqa: E501
     "X-Requested-With": "XMLHttpRequest",
 }
 
 
 async def fetch_with_client(
-    client: httpx.AsyncClient, fps_id: str, month: int, year: int, jitter: tuple[float, float] = (0.3, 1.0)
+    client: httpx.AsyncClient,
+    fps_id: str,
+    month: int,
+    year: int,
+    jitter: tuple[float, float] = (0.3, 1.0),
 ) -> dict | None:
     """
     Fetch stock for one shop reusing a shared client (keep-alive connection pool).
@@ -25,9 +29,15 @@ async def fetch_with_client(
     """
     await asyncio.sleep(random.uniform(*jitter))
     try:
-        resp = await client.post(BASE_URL, data={
-            "fps_id": fps_id, "month": str(month), "year": str(year), "rotype": "PDS",
-        })
+        resp = await client.post(
+            BASE_URL,
+            data={
+                "fps_id": fps_id,
+                "month": str(month),
+                "year": str(year),
+                "rotype": "PDS",
+            },
+        )
         if resp.status_code != 200:
             return None
         return _parse_stock_response(resp.text)
@@ -36,9 +46,7 @@ async def fetch_with_client(
         return None
 
 
-async def fetch_shop_stock(
-    fps_id: str, month: int, year: int
-) -> dict | None:
+async def fetch_shop_stock(fps_id: str, month: int, year: int) -> dict | None:
     """
     Fetch stock status for a single FPS shop from epos portal.
     Returns parsed result dict or None on failure.
@@ -47,12 +55,15 @@ async def fetch_shop_stock(
 
     async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=30.0) as client:
         try:
-            resp = await client.post(BASE_URL, data={
-                "fps_id": fps_id,
-                "month": str(month),
-                "year": str(year),
-                "rotype": "PDS",
-            })
+            resp = await client.post(
+                BASE_URL,
+                data={
+                    "fps_id": fps_id,
+                    "month": str(month),
+                    "year": str(year),
+                    "rotype": "PDS",
+                },
+            )
             if resp.status_code != 200:
                 logger.warning(f"POST failed for {fps_id}: {resp.status_code}")
                 return None
@@ -103,7 +114,10 @@ def _parse_stock_response(html: str) -> dict | None:
         if commodity in commodities:
             commodities[commodity]["allocated_quantity"] += allocated
             commodities[commodity]["received_quantity"] += received
-            if arrival and (not commodities[commodity]["arrival_timestamp"] or arrival > commodities[commodity]["arrival_timestamp"]):
+            if arrival and (
+                not commodities[commodity]["arrival_timestamp"]
+                or arrival > commodities[commodity]["arrival_timestamp"]
+            ):
                 commodities[commodity]["arrival_timestamp"] = arrival
         else:
             commodities[commodity] = {

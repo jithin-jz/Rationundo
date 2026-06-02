@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 
@@ -11,7 +11,9 @@ from app.config import settings
 #   - statement_cache_size=0 disables asyncpg's statement cache
 #   - a unique prepared_statement_name_func avoids name collisions across pooled conns
 #   - NullPool: let pgbouncer handle pooling, not SQLAlchemy
-_is_supabase_pooler = "+asyncpg" in settings.database_url and "pooler.supabase.com" in settings.database_url
+_is_supabase_pooler = (
+    "+asyncpg" in settings.database_url and "pooler.supabase.com" in settings.database_url
+)
 
 _engine_kwargs: dict = {"pool_pre_ping": True}
 if _is_supabase_pooler:

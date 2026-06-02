@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from datetime import datetime, date
+from datetime import date, datetime
 
-from sqlalchemy import select, create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 from app.models.models import RationShop, ShopStockStatus, StockItem
@@ -22,7 +22,11 @@ def get_target_month_year() -> tuple[int, int, str]:
     if today.day <= 3:
         if today.month == 1:
             return 12, today.year - 1, f"December {today.year - 1}"
-        return today.month - 1, today.year, f"{date(today.year, today.month - 1, 1).strftime('%B')} {today.year}"
+        return (
+            today.month - 1,
+            today.year,
+            f"{date(today.year, today.month - 1, 1).strftime('%B')} {today.year}",
+        )
     return today.month, today.year, today.strftime("%B %Y")
 
 
