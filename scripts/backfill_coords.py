@@ -29,7 +29,9 @@ sync_engine = create_engine(settings.database_url.replace("+asyncpg", "+psycopg2
 
 UPDATE = text(
     "UPDATE ration_shops SET latitude = :lat, longitude = :lon, "
-    "dealer_name = :owner WHERE ard_number = :ard"
+    "dealer_name = :owner WHERE ard_number = :ard AND ("
+    "latitude IS DISTINCT FROM :lat OR longitude IS DISTINCT FROM :lon "
+    "OR dealer_name IS DISTINCT FROM :owner)"
 )
 
 
