@@ -211,7 +211,7 @@ function renderShopCard(shop, i) {
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="font-bold text-gray-900">കട നം. ${shop.ard_number}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${shop.dealer_name || ''} · ${shop.district} · ${shop.month_cycle}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${shop.dealer_name || ''} · ${shop.district} · ${shop.month_cycle}${shop.distance_km != null ? ` · 📍 ${shop.distance_km} km` : ''}</p>
                     </div>
                     ${statusHtml}
                 </div>
@@ -220,6 +220,41 @@ function renderShopCard(shop, i) {
             </div>
         `;
 }
+
+// ===== Near me: browser geolocation -> /api/nearby =====
+const nearMeBtn = document.getElementById('near-me-btn');
+nearMeBtn?.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+        alert('ലൊക്കേഷൻ ലഭ്യമല്ല');
+        return;
+    }
+    const label = nearMeBtn.innerHTML;
+    nearMeBtn.disabled = true;
+    nearMeBtn.innerHTML = 'ലൊക്കേഷൻ കണ്ടെത്തുന്നു...';
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            nearMeBtn.innerHTML = label;
+            nearMeBtn.disabled = false;
+            suggestions.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            resultsSection.innerHTML = `<div class="text-center py-16"><div class="inline-block w-8 h-8 border-[3px] border-kerala-green/20 border-t-kerala-green rounded-full animate-spin"></div></div>`;
+            resultsSection.classList.remove('hidden');
+            const { latitude, longitude } = pos.coords;
+            const resp = await fetch(`/api/nearby?lat=${latitude}&lon=${longitude}`);
+            if (!resp.ok) {
+                resultsSection.innerHTML = `<div class="text-center py-8 text-red-500 malayalam">പിശക്</div>`;
+                return;
+            }
+            renderResults(await resp.json());
+        },
+        () => {
+            nearMeBtn.innerHTML = label;
+            nearMeBtn.disabled = false;
+            alert('ലൊക്കേഷൻ അനുമതി നിഷേധിച്ചു');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+});
 
 // Close suggestions on outside click
 document.addEventListener('click', (e) => {

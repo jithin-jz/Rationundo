@@ -1,7 +1,6 @@
 from datetime import datetime
-from sqlalchemy import (
-    Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Index, Text
-)
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -15,12 +14,18 @@ class Pincode(Base):
     post_office_name = Column(String(200), nullable=False)
     district = Column(String(100), nullable=False)
     region = Column(String(200))
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
 
     shops = relationship("RationShop", back_populates="pincode_rel")
 
     __table_args__ = (
-        Index("idx_pincode_trgm", "post_office_name", postgresql_using="gin",
-              postgresql_ops={"post_office_name": "gin_trgm_ops"}),
+        Index(
+            "idx_pincode_trgm",
+            "post_office_name",
+            postgresql_using="gin",
+            postgresql_ops={"post_office_name": "gin_trgm_ops"},
+        ),
     )
 
 
@@ -58,9 +63,7 @@ class ShopStockStatus(Base):
     shop = relationship("RationShop", back_populates="stock_statuses")
     items = relationship("StockItem", back_populates="stock_status", cascade="all, delete-orphan")
 
-    __table_args__ = (
-        Index("idx_shop_month", "shop_id", "month_cycle", unique=True),
-    )
+    __table_args__ = (Index("idx_shop_month", "shop_id", "month_cycle", unique=True),)
 
 
 class StockItem(Base):

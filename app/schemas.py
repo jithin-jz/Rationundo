@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -39,6 +40,9 @@ class ShopStatusOut(BaseModel):
     last_checked: datetime | None
     month_cycle: str
     items: list[StockItemOut]
+    latitude: float | None = None
+    longitude: float | None = None
+    distance_km: float | None = None
 
     class Config:
         from_attributes = True

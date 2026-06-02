@@ -27,3 +27,13 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SCRAPE_CONCURRENCY: "20"
         run: python scripts/scrape_all.py
+
+      - name: Backfill shop coordinates
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/backfill_coords.py
+
+      - name: Geocode pincodes & relink shops
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/geocode_and_relink.py
