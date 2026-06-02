@@ -19,9 +19,11 @@ User → FastAPI → PostgreSQL (Supabase) → Response
 ## Features
 
 - Search by **shop number**, **pincode**, or **place name** (fuzzy autocomplete via `pg_trgm`)
+- **Near me** GPS search nearest shops sorted by distance (km) via haversine
 - Browse by **District → Taluk → Shop**
 - Per-commodity allocated vs received quantities with progress bars
 - Malayalam-first UI
+- **Installable PWA** with offline app shell (service worker)
 - Covers all 14 districts · 14,000+ shops · 5,000+ pincodes
 
 ## Tech stack
