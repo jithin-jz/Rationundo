@@ -10,6 +10,7 @@ import csv
 import io
 import logging
 import math
+import unicodedata
 import zipfile
 
 import httpx
@@ -33,8 +34,15 @@ def _load_places() -> list[tuple[str, float, float]]:
     places = []
     for row in csv.reader(io.StringIO(text_data), delimiter="\t"):
         if len(row) >= 11 and row[6] == "P" and row[10] == KERALA_ADMIN1:
-            places.append((row[1], float(row[4]), float(row[5])))
+            places.append((_romanize(row[1]), float(row[4]), float(row[5])))
     return places
+
+
+def _romanize(name: str) -> str:
+    """Strip diacritics for display consistency (Puthuppādi -> Puthuppadi)."""
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", name) if not unicodedata.combining(c)
+    )
 
 
 def _haversine(lat1, lon1, lat2, lon2) -> float:
