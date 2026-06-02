@@ -107,15 +107,15 @@ function renderResults(data) {
 
     let html = `
         <!-- Summary Header -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-bold text-gray-900">${data.post_office_name}</h2>
-                    <p class="text-sm text-gray-500 mt-0.5">📍 ${data.pincode} · ${total} കടകൾ</p>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 break-words">${data.post_office_name}</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 mt-0.5">📍 ${data.pincode} · ${total} കടകൾ</p>
                 </div>
-                <div class="text-right">
-                    <div class="text-3xl font-extrabold ${percentage > 70 ? 'text-kerala-green' : percentage > 30 ? 'text-amber-500' : 'text-red-500'}">${percentage}%</div>
-                    <div class="text-xs text-gray-500 mt-0.5">${delivered}/${total} സ്റ്റോക്ക് എത്തി${partialNote}</div>
+                <div class="text-right shrink-0">
+                    <div class="text-2xl sm:text-3xl font-extrabold ${percentage > 70 ? 'text-kerala-green' : percentage > 30 ? 'text-amber-500' : 'text-red-500'}">${percentage}%</div>
+                    <div class="text-[11px] sm:text-xs text-gray-500 mt-0.5">${delivered}/${total} സ്റ്റോക്ക് എത്തി${partialNote}</div>
                 </div>
             </div>
             <!-- Progress bar -->
