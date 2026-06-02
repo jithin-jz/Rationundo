@@ -1,6 +1,6 @@
 // Shell-only service worker. Caches static assets for instant repeat loads
 // and offline shell. NEVER caches /api/ — stock data must always be fresh.
-const CACHE = 'rationundo-shell-v1';
+const CACHE = 'rationundo-shell-v2';
 const SHELL = [
   '/',
   '/static/app.js',
