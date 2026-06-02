@@ -22,13 +22,13 @@ async function fetchAutocomplete(q) {
     renderSuggestions(data);
 }
 
-function renderSuggestions(items) {
+function renderSuggestions(items, target = suggestions) {
     if (!items.length) {
-        suggestions.innerHTML = `<div class="px-5 py-4 text-sm text-gray-400 malayalam">ഫലങ്ങൾ ഒന്നും കണ്ടെത്തിയില്ല</div>`;
-        suggestions.classList.remove('hidden');
+        target.innerHTML = `<div class="px-5 py-4 text-sm text-gray-400 malayalam">ഫലങ്ങൾ ഒന്നും കണ്ടെത്തിയില്ല</div>`;
+        target.classList.remove('hidden');
         return;
     }
-    suggestions.innerHTML = items.map(item => {
+    target.innerHTML = items.map(item => {
         const icon = item.type === 'shop'
             ? `<svg class="w-4 h-4 text-kerala-gold shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>`
             : `<svg class="w-4 h-4 text-kerala-green shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>`;
@@ -52,6 +52,7 @@ function renderSuggestions(items) {
 async function selectItem(type, id) {
     history.replaceState(null, '', `?${type}=${id}`);
     suggestions.classList.add('hidden');
+    document.getElementById('owner-suggestions')?.classList.add('hidden');
     emptyState.classList.add('hidden');
     resultsSection.innerHTML = `
         <div class="text-center py-16">
@@ -256,10 +257,36 @@ nearMeBtn?.addEventListener('click', () => {
     );
 });
 
+// ===== Owner name search (separate box) =====
+const ownerInput = document.getElementById('owner-input');
+const ownerSuggestions = document.getElementById('owner-suggestions');
+let ownerDebounce;
+
+ownerInput?.addEventListener('input', () => {
+    clearTimeout(ownerDebounce);
+    const q = ownerInput.value.trim();
+    if (q.length < 2) {
+        ownerSuggestions.classList.add('hidden');
+        return;
+    }
+    ownerDebounce = setTimeout(async () => {
+        const resp = await fetch(`/api/owners?q=${encodeURIComponent(q)}`);
+        if (!resp.ok) return;
+        renderSuggestions(await resp.json(), ownerSuggestions);
+    }, 200);
+});
+
+ownerInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') ownerSuggestions.classList.add('hidden');
+});
+
 // Close suggestions on outside click
 document.addEventListener('click', (e) => {
     if (!e.target.closest('#search-container')) {
         suggestions.classList.add('hidden');
+    }
+    if (!e.target.closest('#owner-container')) {
+        ownerSuggestions?.classList.add('hidden');
     }
 });
 
@@ -272,7 +299,6 @@ const placeholders = [
     "കടയുടെ നമ്പർ (ഉദാ. 1736083)...",
     "പിൻകോഡ് (ഉദാ. 683101)...",
     "സ്ഥലപ്പേര് (ഉദാ. Aluva)...",
-    "ഉടമയുടെ പേര് (ഉദാ. Shibu)...",
 ];
 let phIndex = 0;
 setInterval(() => {
