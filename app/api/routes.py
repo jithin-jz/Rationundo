@@ -99,6 +99,28 @@ async def autocomplete(
             )
         rows = (await db.execute(PLACE_BY_PIN, {"q": q})).all()
     else:
+        # Owner-name matches (dealer_name now holds the shop owner) -> shop results.
+        owners = (
+            (
+                await db.execute(
+                    select(RationShop)
+                    .where(RationShop.dealer_name.ilike(f"%{q}%"))
+                    .order_by(RationShop.dealer_name)
+                    .limit(6)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for s in owners:
+            suggestions.append(
+                Suggestion(
+                    type="shop",
+                    id=s.id,
+                    label=s.dealer_name or f"കട നം. {s.ard_number}",
+                    sublabel=f"കട നം. {s.ard_number} · {s.district}",
+                )
+            )
         rows = (await db.execute(PLACE_BY_NAME, {"q": q})).all()
 
     for pincode_id, post_office, token, pincode, district in rows:
