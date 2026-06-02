@@ -161,12 +161,14 @@ async def get_districts(db: AsyncSession = Depends(get_db)):
 
 @router.get("/taluks")
 async def get_taluks(district: str, db: AsyncSession = Depends(get_db)):
-    """List taluks/offices for a district."""
+    """List taluks/offices for a district. Office name comes from
+    location_raw_string (dealer_name now holds the shop owner, not the office)."""
+    taluk = func.replace(func.split_part(RationShop.location_raw_string, ",", 1), "_", " ")
     rows = await db.execute(
-        select(RationShop.tso_code, RationShop.dealer_name)
+        select(RationShop.tso_code, taluk)
         .where(RationShop.district == district)
         .distinct()
-        .order_by(RationShop.dealer_name)
+        .order_by(taluk)
     )
     return [{"tso_code": code, "name": name} for code, name in rows.all()]
 
