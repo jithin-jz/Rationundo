@@ -125,9 +125,12 @@ function renderResults(data) {
         </div>
     `;
 
-    // Sort: full delivered first, then partial, then none
+    // Distance-based results (near me / pincode): keep nearest-first.
+    // Otherwise sort by delivery state: full, then partial, then none.
     const rank = { full: 0, partial: 1, none: 2 };
-    const sorted = [...data.shops].sort((a, b) => rank[stateOf(a)] - rank[stateOf(b)]);
+    const sorted = data.shops.some(s => s.distance_km != null)
+        ? [...data.shops].sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity))
+        : [...data.shops].sort((a, b) => rank[stateOf(a)] - rank[stateOf(b)]);
 
     html += `<div id="feed" class="space-y-3"></div><div id="feed-sentinel" class="h-px"></div>`;
     resultsSection.innerHTML = html;
