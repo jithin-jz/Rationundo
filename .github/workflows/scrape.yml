@@ -42,3 +42,9 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python scripts/geocode_and_relink.py
+
+      - name: Backfill local place names
+        if: github.event.schedule == '30 21 * * 0' || github.event_name == 'workflow_dispatch'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/backfill_local_place.py

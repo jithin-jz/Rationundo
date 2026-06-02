@@ -212,7 +212,7 @@ function renderShopCard(shop, i) {
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="font-bold text-gray-900">കട നം. ${shop.ard_number}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${shop.dealer_name || ''} · ${shop.district} · ${shop.month_cycle}${shop.distance_km != null ? ` · 📍 ${shop.distance_km} km` : ''}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${shop.dealer_name || ''} · ${shop.local_place ? `${shop.local_place}, ` : ''}${shop.district} · ${shop.month_cycle}${shop.distance_km != null ? ` · 📍 ${shop.distance_km} km` : ''}</p>
                     </div>
                     ${statusHtml}
                 </div>

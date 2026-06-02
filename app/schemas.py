@@ -35,6 +35,7 @@ class ShopStatusOut(BaseModel):
     dealer_name: str | None
     district: str
     location: str | None
+    local_place: str | None = None
     is_stock_delivered: bool
     delivery_state: str = "none"  # "full" | "partial" | "none"
     last_checked: datetime | None

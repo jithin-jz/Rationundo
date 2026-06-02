@@ -234,6 +234,7 @@ def _build_shop_out(shop: RationShop, distance_km: float | None = None) -> ShopS
         dealer_name=shop.dealer_name,
         district=shop.district,
         location=shop.location_raw_string,
+        local_place=shop.local_place,
         is_stock_delivered=latest.is_stock_delivered if latest else False,
         delivery_state=state,
         last_checked=latest.last_checked_timestamp if latest else None,

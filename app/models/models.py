@@ -38,6 +38,7 @@ class RationShop(Base):
     district = Column(String(100), nullable=False)
     tso_code = Column(String(50), nullable=False)
     location_raw_string = Column(Text)
+    local_place = Column(String(120), nullable=True)
     pincode_id = Column(Integer, ForeignKey("pincodes.id"), nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
