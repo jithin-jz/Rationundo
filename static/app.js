@@ -299,9 +299,8 @@ searchInput.addEventListener('keydown', (e) => {
 
 // Rotating placeholder examples
 const placeholders = [
-    "കടയുടെ നമ്പർ (ഉദാ. 1736083)...",
-    "പിൻകോഡ് (ഉദാ. 683101)...",
-    "സ്ഥലപ്പേര് (ഉദാ. Aluva)...",
+    "കടയുടെ നമ്പർ...",
+    "സ്ഥലപ്പേര്...",
 ];
 let phIndex = 0;
 setInterval(() => {
