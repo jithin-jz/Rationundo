@@ -43,16 +43,17 @@ async def _shops_near(db, lat: float, lon: float, radius_km: float, limit: int):
 # the locality token (split from location_raw_string) and the linked post-office
 # name. Keyed by pincode_id so a pick always resolves to shops.
 _TOKEN = "replace(split_part(s.location_raw_string, ',', 1), '_', ' ')"
-_SCORE = f"greatest(similarity({_TOKEN}, :q), similarity(p.post_office_name, :q))"
+_SCORE_SEL = f"greatest(similarity({_TOKEN}, :q1), similarity(p.post_office_name, :q2))"
+_SCORE_WHERE = f"greatest(similarity({_TOKEN}, :q3), similarity(p.post_office_name, :q4))"
 
 PLACE_BY_NAME = text(
     f"""
     SELECT pincode_id, post_office, token, pincode, district FROM (
         SELECT DISTINCT ON (s.pincode_id)
             s.pincode_id, p.post_office_name AS post_office, {_TOKEN} AS token,
-            p.pincode, p.district, {_SCORE} AS score
+            p.pincode, p.district, {_SCORE_SEL} AS score
         FROM ration_shops s JOIN pincodes p ON p.id = s.pincode_id
-        WHERE {_SCORE} > 0.2
+        WHERE {_SCORE_WHERE} > 0.2
         ORDER BY s.pincode_id, score DESC
     ) t ORDER BY score DESC LIMIT 10
 """
@@ -99,7 +100,7 @@ async def autocomplete(
             )
         rows = (await db.execute(PLACE_BY_PIN, {"q": q})).all()
     else:
-        rows = (await db.execute(PLACE_BY_NAME, {"q": q})).all()
+        rows = (await db.execute(PLACE_BY_NAME, {"q1": q, "q2": q, "q3": q, "q4": q})).all()
 
     for pincode_id, post_office, token, pincode, district in rows:
         # Label is the linked pincode's post office so name and pincode always
@@ -127,11 +128,12 @@ async def owners(
     db: AsyncSession = Depends(get_db),
 ):
     """Autocomplete shops by owner name (dealer_name holds the shop owner)."""
+    safe_q = q.strip().replace("%", r"\%").replace("_", r"\_")
     shops = (
         (
             await db.execute(
                 select(RationShop)
-                .where(RationShop.dealer_name.ilike(f"%{q.strip()}%"))
+                .where(RationShop.dealer_name.ilike(f"%{safe_q}%"))
                 .order_by(RationShop.dealer_name)
                 .limit(10)
             )
