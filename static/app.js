@@ -46,7 +46,7 @@ function renderSuggestions(items, target = suggestions) {
             ${badge}
         </button>`;
     }).join('');
-    suggestions.classList.remove('hidden');
+    target.classList.remove('hidden');
 }
 
 async function selectItem(type, id) {
