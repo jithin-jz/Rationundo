@@ -34,7 +34,7 @@ _CSP = "; ".join(
         "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data: https://buymeachai.ezee.li",
+        "img-src 'self' data:",
         (
             "connect-src 'self' https://www.google-analytics.com "
             "https://region1.google-analytics.com https://analytics.google.com"

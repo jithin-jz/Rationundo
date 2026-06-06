@@ -1,10 +1,11 @@
 // Shell-only service worker. NEVER caches /api/ — stock data must always be fresh.
-const CACHE = 'rationundo-shell-v5';
+const CACHE = 'rationundo-shell-v6';
 const SHELL = [
   '/',
   '/static/app.js?v=5',
   '/static/style.css?v=5',
   '/static/favicon.svg',
+  '/static/buymeachai.svg?v=1',
   '/static/manifest.json',
 ];
 const SHELL_PATHS = new Set(SHELL.map((path) => new URL(path, self.location.origin).pathname));
