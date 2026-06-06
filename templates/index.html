@@ -15,27 +15,9 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0D3B14">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        kerala: {
-                            gold: '#D4A843',
-                            green: '#1B5E20',
-                            darkgreen: '#0D3B14',
-                            leaf: '#2E7D32',
-                            cream: '#FAFAF6',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=5">
 </head>
 <body class="bg-kerala-cream min-h-screen flex flex-col">
     <!-- Header -->
@@ -191,7 +173,7 @@
         </div>
     </footer>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=5"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

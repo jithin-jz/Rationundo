@@ -1,12 +1,13 @@
 // Shell-only service worker. NEVER caches /api/ — stock data must always be fresh.
-const CACHE = 'rationundo-shell-v4';
+const CACHE = 'rationundo-shell-v5';
 const SHELL = [
   '/',
-  '/static/app.js',
-  '/static/style.css',
+  '/static/app.js?v=5',
+  '/static/style.css?v=5',
   '/static/favicon.svg',
   '/static/manifest.json',
 ];
+const SHELL_PATHS = new Set(SHELL.map((path) => new URL(path, self.location.origin).pathname));
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -33,7 +34,7 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((hit) => {
       const fresh = fetch(e.request).then((response) => {
-        if (url.origin === self.location.origin && SHELL.includes(url.pathname) && response.ok) {
+        if (url.origin === self.location.origin && SHELL_PATHS.has(url.pathname) && response.ok) {
           caches.open(CACHE).then((cache) => cache.put(e.request, response.clone()));
         }
         return response;
