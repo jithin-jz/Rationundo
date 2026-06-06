@@ -37,7 +37,7 @@ User → FastAPI → PostgreSQL (Supabase) → Response
 ## Local development
 
 ```bash
-# 1. Start local Postgres (port 5433) + Redis
+# 1. Start local Postgres (port 5433)
 docker compose up -d
 
 # 2. Install deps
@@ -70,7 +70,8 @@ See [DEPLOY.md](DEPLOY.md) for the full Supabase + Render + GitHub Actions setup
 
 The scraper runs automatically every day at 2 AM IST via GitHub Actions
 (`.github/workflows/scrape.yml`). It refreshes pending/partial shops, skips
-fully-received ones, and prunes data older than 3 months.
+fully-received ones, and prunes data older than 3 months. Manual workflow runs
+can run only the daily scrape, only the weekly geo refresh, or both.
 
 ## Project structure
 
@@ -81,7 +82,11 @@ app/
 ├── database.py       # Async engine (Supabase pooler-aware)
 ├── schemas.py        # Pydantic response models
 ├── api/routes.py     # API endpoints
-└── models/models.py  # SQLAlchemy ORM models
+├── models/models.py  # SQLAlchemy ORM models
+└── worker/
+    ├── scraper.py    # ePOS fetch + parser helpers
+    ├── tasks.py      # Sequential scrape helper
+    └── time_utils.py # IST month-cycle helpers
 scripts/
 ├── seed_pincodes.py    # Load pincode master data
 ├── discover_shops.py   # One-time shop registry builder

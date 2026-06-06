@@ -1,16 +1,15 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class PincodeResult(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     pincode: str
     post_office_name: str
     district: str
-
-    class Config:
-        from_attributes = True
 
 
 class Suggestion(BaseModel):
@@ -21,16 +20,17 @@ class Suggestion(BaseModel):
 
 
 class StockItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     commodity_name: str
     allocated_quantity: float
     received_quantity: float
     arrival_timestamp: datetime | None
 
-    class Config:
-        from_attributes = True
-
 
 class ShopStatusOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     ard_number: str
     dealer_name: str | None
     district: str
@@ -44,9 +44,6 @@ class ShopStatusOut(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     distance_km: float | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class SearchResponse(BaseModel):

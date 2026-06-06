@@ -6,7 +6,17 @@ on:
     - cron: "30 20 * * *"
     # Weekly coordinate + geocode refresh: Sundays 21:30 UTC (shop locations rarely change)
     - cron: "30 21 * * 0"
-  workflow_dispatch: {}  # allow manual runs
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task to run"
+        required: true
+        default: "scrape"
+        type: choice
+        options:
+          - scrape
+          - geo
+          - all
 
 jobs:
   scrape:
@@ -25,26 +35,30 @@ jobs:
           pip install psycopg2-binary
 
       - name: Run scraper
-        if: github.event.schedule == '30 20 * * *' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '30 20 * * *' || github.event.inputs.task == 'scrape' || github.event.inputs.task == 'all'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SCRAPE_CONCURRENCY: "20"
+          TZ: Asia/Kolkata
         run: python scripts/scrape_all.py
 
       - name: Backfill shop coordinates
-        if: github.event.schedule == '30 21 * * 0' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '30 21 * * 0' || github.event.inputs.task == 'geo' || github.event.inputs.task == 'all'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TZ: Asia/Kolkata
         run: python scripts/backfill_coords.py
 
       - name: Geocode pincodes & relink shops
-        if: github.event.schedule == '30 21 * * 0' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '30 21 * * 0' || github.event.inputs.task == 'geo' || github.event.inputs.task == 'all'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TZ: Asia/Kolkata
         run: python scripts/geocode_and_relink.py
 
       - name: Backfill local place names
-        if: github.event.schedule == '30 21 * * 0' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '30 21 * * 0' || github.event.inputs.task == 'geo' || github.event.inputs.task == 'all'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TZ: Asia/Kolkata
         run: python scripts/backfill_local_place.py

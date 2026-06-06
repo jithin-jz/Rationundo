@@ -5,6 +5,25 @@ const emptyState = document.getElementById('empty-state');
 
 let debounceTimer;
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    }[ch]));
+}
+
+function asNumber(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+}
+
+function formatNumber(value) {
+    return asNumber(value).toLocaleString('en-IN');
+}
+
 searchInput.addEventListener('input', () => {
     clearTimeout(debounceTimer);
     const q = searchInput.value.trim();
@@ -29,19 +48,22 @@ function renderSuggestions(items, target = suggestions) {
         return;
     }
     target.innerHTML = items.map(item => {
-        const icon = item.type === 'shop'
+        const type = item.type === 'shop' ? 'shop' : 'place';
+        const id = Number.parseInt(item.id, 10);
+        if (!Number.isFinite(id)) return '';
+        const icon = type === 'shop'
             ? `<svg class="w-4 h-4 text-kerala-gold shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>`
             : `<svg class="w-4 h-4 text-kerala-green shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>`;
-        const badge = item.type === 'shop'
+        const badge = type === 'shop'
             ? `<span class="shrink-0 text-[10px] font-semibold bg-kerala-gold/10 text-kerala-gold px-2 py-0.5 rounded malayalam">കട</span>`
             : `<span class="shrink-0 text-[10px] font-semibold bg-kerala-green/5 text-kerala-green px-2 py-0.5 rounded malayalam">സ്ഥലം</span>`;
         return `
         <button class="suggestion-item w-full text-left px-4 py-3 transition-colors border-b border-gray-50 last:border-0 flex items-center gap-3"
-                onclick="selectItem('${item.type}', ${item.id})">
+                data-select-type="${type}" data-select-id="${id}">
             ${icon}
             <div class="min-w-0 flex-1">
-                <div class="font-semibold text-gray-800 text-[15px] truncate">${item.label}</div>
-                <div class="text-xs text-gray-400 truncate">${item.sublabel}</div>
+                <div class="font-semibold text-gray-800 text-[15px] truncate">${escapeHtml(item.label)}</div>
+                <div class="text-xs text-gray-400 truncate">${escapeHtml(item.sublabel)}</div>
             </div>
             ${badge}
         </button>`;
@@ -50,7 +72,10 @@ function renderSuggestions(items, target = suggestions) {
 }
 
 async function selectItem(type, id) {
-    history.replaceState(null, '', `?${type}=${id}`);
+    const safeType = type === 'shop' ? 'shop' : 'place';
+    const safeId = Number.parseInt(id, 10);
+    if (!Number.isFinite(safeId)) return;
+    history.replaceState(null, '', `?${safeType}=${safeId}`);
     suggestions.classList.add('hidden');
     document.getElementById('owner-suggestions')?.classList.add('hidden');
     emptyState.classList.add('hidden');
@@ -61,7 +86,7 @@ async function selectItem(type, id) {
         </div>`;
     resultsSection.classList.remove('hidden');
 
-    const endpoint = type === 'shop' ? `/api/shop/${id}` : `/api/status/${id}`;
+    const endpoint = safeType === 'shop' ? `/api/shop/${safeId}` : `/api/status/${safeId}`;
     const resp = await fetch(endpoint);
     if (!resp.ok) {
         resultsSection.innerHTML = `<div class="text-center py-8 text-red-500 malayalam">ഡാറ്റ ലോഡ് ചെയ്യുന്നതിൽ പിശക്</div>`;
@@ -110,8 +135,8 @@ function renderResults(data) {
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <h2 class="text-base sm:text-lg font-bold text-gray-900 break-words">${data.post_office_name}</h2>
-                    <p class="text-xs sm:text-sm text-gray-500 mt-0.5">📍 ${data.pincode} · ${total} കടകൾ</p>
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 break-words">${escapeHtml(data.post_office_name)}</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 mt-0.5">📍 ${escapeHtml(data.pincode)} · ${total} കടകൾ</p>
                 </div>
                 <div class="text-right shrink-0">
                     <div class="text-2xl sm:text-3xl font-extrabold ${percentage > 70 ? 'text-kerala-green' : percentage > 30 ? 'text-amber-500' : 'text-red-500'}">${percentage}%</div>
@@ -164,6 +189,12 @@ function appendBatch() {
 function renderShopCard(shop, i) {
         const state = shop.delivery_state || (shop.is_stock_delivered ? 'full' : 'none');
         const cardClass = state === 'full' ? 'card-delivered' : state === 'partial' ? 'card-partial' : 'card-pending';
+        const ard = escapeHtml(shop.ard_number);
+        const dealer = escapeHtml(shop.dealer_name || '');
+        const localPlace = shop.local_place ? `${escapeHtml(shop.local_place)}, ` : '';
+        const district = escapeHtml(shop.district);
+        const monthCycle = escapeHtml(shop.month_cycle);
+        const distance = shop.distance_km != null ? ` · 📍 ${asNumber(shop.distance_km).toFixed(1)} km` : '';
 
         const statusHtml = state === 'full'
             ? `<div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50">
@@ -185,14 +216,18 @@ function renderShopCard(shop, i) {
                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 malayalam">സാധനങ്ങളുടെ വിശദാംശങ്ങൾ</p>
                 <div class="space-y-1.5">
                     ${shop.items.map(item => {
-                        const pct = item.allocated_quantity > 0 ? Math.round((item.received_quantity / item.allocated_quantity) * 100) : 0;
+                        const allocated = asNumber(item.allocated_quantity);
+                        const received = asNumber(item.received_quantity);
+                        const pct = allocated > 0 ? Math.round((received / allocated) * 100) : 0;
                         const mlName = commodityMl[item.commodity_name] || item.commodity_name;
+                        const commodityName = escapeHtml(item.commodity_name);
+                        const commodityMlName = mlName !== item.commodity_name ? escapeHtml(mlName) : '';
                         return `
                         <div class="flex items-center gap-3 py-1.5">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between mb-1">
-                                    <span class="text-sm font-medium text-gray-800">${item.commodity_name} <span class="text-xs text-gray-400 malayalam">${mlName !== item.commodity_name ? mlName : ''}</span></span>
-                                    <span class="text-xs font-semibold ${item.received_quantity > 0 ? 'text-kerala-green' : 'text-gray-400'}">${item.received_quantity.toLocaleString()} / ${item.allocated_quantity.toLocaleString()}</span>
+                                    <span class="text-sm font-medium text-gray-800">${commodityName} <span class="text-xs text-gray-400 malayalam">${commodityMlName}</span></span>
+                                    <span class="text-xs font-semibold ${received > 0 ? 'text-kerala-green' : 'text-gray-400'}">${formatNumber(received)} / ${formatNumber(allocated)}</span>
                                 </div>
                                 <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                     <div class="h-full rounded-full ${pct >= 80 ? 'bg-kerala-green' : pct > 0 ? 'bg-amber-400' : 'bg-gray-200'}" style="width: ${Math.min(pct, 100)}%"></div>
@@ -214,8 +249,8 @@ function renderShopCard(shop, i) {
             <div class="${cardClass} rounded-xl shadow-sm border border-gray-100 p-4 animate-slide-up" style="animation-delay: ${i * 40}ms; opacity: 0">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="font-bold text-gray-900">കട നം. ${shop.ard_number}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${shop.dealer_name || ''} · ${shop.local_place ? `${shop.local_place}, ` : ''}${shop.district} · ${shop.month_cycle}${shop.distance_km != null ? ` · 📍 ${shop.distance_km} km` : ''}</p>
+                        <p class="font-bold text-gray-900">കട നം. ${ard}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${dealer} · ${localPlace}${district} · ${monthCycle}${distance}</p>
                     </div>
                     ${statusHtml}
                 </div>
@@ -227,43 +262,98 @@ function renderShopCard(shop, i) {
 
 // ===== Near me: browser geolocation -> /api/nearby =====
 const nearMeBtn = document.getElementById('near-me-btn');
-nearMeBtn?.addEventListener('click', () => {
+
+function showNearMeMessage(title, detail = '', isError = true) {
+    emptyState.classList.add('hidden');
+    resultsSection.innerHTML = `
+        <div class="text-center py-10 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <p class="font-semibold ${isError ? 'text-red-600' : 'text-gray-700'} malayalam">${escapeHtml(title)}</p>
+            ${detail ? `<p class="mt-1 text-sm text-gray-500 malayalam">${escapeHtml(detail)}</p>` : ''}
+        </div>`;
+    resultsSection.classList.remove('hidden');
+}
+
+function getPosition(options) {
+    return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    });
+}
+
+async function getPositionWithFallback() {
+    try {
+        return await getPosition({ enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+    } catch (err) {
+        if (err.code === err.PERMISSION_DENIED) throw err;
+        return getPosition({ enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 });
+    }
+}
+
+function locationErrorText(err) {
+    if (err?.code === err?.PERMISSION_DENIED) {
+        return ['ലൊക്കേഷൻ അനുമതി നിഷേധിച്ചു', 'ബ്രൗസർ/ഫോൺ സെറ്റിംഗ്സിൽ ലൊക്കേഷൻ അനുമതി നൽകണം.'];
+    }
+    if (err?.code === err?.POSITION_UNAVAILABLE) {
+        return ['ലൊക്കേഷൻ കണ്ടെത്താൻ കഴിഞ്ഞില്ല', 'GPS അല്ലെങ്കിൽ നെറ്റ്‌വർക്ക് ലൊക്കേഷൻ ഇപ്പോൾ ലഭ്യമല്ല.'];
+    }
+    if (err?.code === err?.TIMEOUT) {
+        return ['ലൊക്കേഷൻ കണ്ടെത്താൻ കൂടുതൽ സമയം എടുക്കുന്നു', 'വീണ്ടും ശ്രമിക്കുക, അല്ലെങ്കിൽ സ്ഥലപ്പേര് ഉപയോഗിച്ച് തിരയുക.'];
+    }
+    return ['ലൊക്കേഷൻ ലഭ്യമല്ല', 'വീണ്ടും ശ്രമിക്കുക, അല്ലെങ്കിൽ സ്ഥലപ്പേര് ഉപയോഗിച്ച് തിരയുക.'];
+}
+
+nearMeBtn?.addEventListener('click', async () => {
     if (!navigator.geolocation) {
-        alert('ലൊക്കേഷൻ ലഭ്യമല്ല');
+        showNearMeMessage('ലൊക്കേഷൻ ലഭ്യമല്ല', 'ഈ ബ്രൗസറിൽ ലൊക്കേഷൻ പിന്തുണയില്ല.');
         return;
     }
+    if (!window.isSecureContext) {
+        showNearMeMessage('ലൊക്കേഷൻ ലഭ്യമല്ല', 'ലൊക്കേഷൻ ഉപയോഗിക്കാൻ HTTPS ആവശ്യമാണ്.');
+        return;
+    }
+
     const label = nearMeBtn.innerHTML;
     nearMeBtn.disabled = true;
     nearMeBtn.innerHTML = 'ലൊക്കേഷൻ കണ്ടെത്തുന്നു...';
-    navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-            nearMeBtn.innerHTML = label;
-            nearMeBtn.disabled = false;
-            suggestions.classList.add('hidden');
-            emptyState.classList.add('hidden');
-            resultsSection.innerHTML = `<div class="text-center py-16"><div class="inline-block w-8 h-8 border-[3px] border-kerala-green/20 border-t-kerala-green rounded-full animate-spin"></div></div>`;
-            resultsSection.classList.remove('hidden');
-            const { latitude, longitude } = pos.coords;
-            const resp = await fetch(`/api/nearby?lat=${latitude}&lon=${longitude}`);
-            if (!resp.ok) {
-                resultsSection.innerHTML = `<div class="text-center py-8 text-red-500 malayalam">പിശക്</div>`;
-                return;
-            }
-            renderResults(await resp.json());
-        },
-        () => {
-            nearMeBtn.innerHTML = label;
-            nearMeBtn.disabled = false;
-            alert('ലൊക്കേഷൻ അനുമതി നിഷേധിച്ചു');
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
+    suggestions.classList.add('hidden');
+    emptyState.classList.add('hidden');
+    resultsSection.innerHTML = `<div class="text-center py-16"><div class="inline-block w-8 h-8 border-[3px] border-kerala-green/20 border-t-kerala-green rounded-full animate-spin"></div></div>`;
+    resultsSection.classList.remove('hidden');
+
+    try {
+        const pos = await getPositionWithFallback();
+        const { latitude, longitude } = pos.coords;
+        const resp = await fetch(`/api/nearby?lat=${latitude}&lon=${longitude}`);
+        if (resp.status === 422) {
+            showNearMeMessage('കേരളത്തിനുള്ളിലെ ലൊക്കേഷൻ കണ്ടെത്തിയില്ല', 'സ്ഥലപ്പേര് അല്ലെങ്കിൽ കട നമ്പർ ഉപയോഗിച്ച് തിരയുക.');
+            return;
+        }
+        if (!resp.ok) {
+            showNearMeMessage('ഡാറ്റ ലോഡ് ചെയ്യുന്നതിൽ പിശക്', 'കുറച്ച് കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക.');
+            return;
+        }
+        renderResults(await resp.json());
+    } catch (err) {
+        const [title, detail] = locationErrorText(err);
+        showNearMeMessage(title, detail);
+    } finally {
+        nearMeBtn.innerHTML = label;
+        nearMeBtn.disabled = false;
+    }
 });
 
 // ===== Owner name search (separate box) =====
 const ownerInput = document.getElementById('owner-input');
 const ownerSuggestions = document.getElementById('owner-suggestions');
 let ownerDebounce;
+
+function handleSuggestionClick(e) {
+    const button = e.target.closest('[data-select-type][data-select-id]');
+    if (!button) return;
+    selectItem(button.dataset.selectType, button.dataset.selectId);
+}
+
+suggestions.addEventListener('click', handleSuggestionClick);
+ownerSuggestions?.addEventListener('click', handleSuggestionClick);
 
 ownerInput?.addEventListener('input', () => {
     clearTimeout(ownerDebounce);

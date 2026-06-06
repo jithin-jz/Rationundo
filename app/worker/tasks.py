@@ -1,14 +1,13 @@
 import asyncio
 import logging
-from datetime import date, datetime
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 from app.models.models import RationShop, ShopStockStatus, StockItem
-from app.worker.celery_app import celery_app
 from app.worker.scraper import fetch_shop_stock
+from app.worker.time_utils import get_target_month_year, now_ist_naive
 
 logger = logging.getLogger(__name__)
 
@@ -16,23 +15,8 @@ sync_engine = create_engine(settings.database_url.replace("+asyncpg", "+psycopg2
 SyncSession = sessionmaker(sync_engine)
 
 
-def get_target_month_year() -> tuple[int, int, str]:
-    """Determine month/year to scrape, handling start-of-month boundary."""
-    today = date.today()
-    if today.day <= 3:
-        if today.month == 1:
-            return 12, today.year - 1, f"December {today.year - 1}"
-        return (
-            today.month - 1,
-            today.year,
-            f"{date(today.year, today.month - 1, 1).strftime('%B')} {today.year}",
-        )
-    return today.month, today.year, today.strftime("%B %Y")
-
-
-@celery_app.task(name="app.worker.tasks.scrape_all_shops")
 def scrape_all_shops():
-    """Main task: iterate all shops and scrape stock status."""
+    """Iterate all shops and scrape stock status sequentially."""
     with SyncSession() as db:
         shops = db.execute(select(RationShop)).scalars().all()
         shop_data = [(s.id, s.ard_number) for s in shops]
@@ -68,7 +52,7 @@ def _persist_result(shop_id: int, month_cycle: str, result: dict):
 
         if existing:
             existing.is_stock_delivered = result["is_delivered"]
-            existing.last_checked_timestamp = datetime.now()
+            existing.last_checked_timestamp = now_ist_naive()
             db.query(StockItem).filter(StockItem.stock_status_id == existing.id).delete()
             for item in result["items"]:
                 db.add(StockItem(stock_status_id=existing.id, **item))
@@ -76,7 +60,7 @@ def _persist_result(shop_id: int, month_cycle: str, result: dict):
             status = ShopStockStatus(
                 shop_id=shop_id,
                 is_stock_delivered=result["is_delivered"],
-                last_checked_timestamp=datetime.now(),
+                last_checked_timestamp=now_ist_naive(),
                 month_cycle=month_cycle,
             )
             db.add(status)

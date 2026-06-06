@@ -26,7 +26,9 @@ engine = create_engine(settings.database_url.replace("+asyncpg", "+psycopg2"))
 
 
 def geocode_pincodes() -> None:
-    rows = csv.DictReader(io.StringIO(httpx.get(CSV_URL, timeout=60).text))
+    resp = httpx.get(CSV_URL, timeout=60)
+    resp.raise_for_status()
+    rows = csv.DictReader(io.StringIO(resp.text))
     coords = {
         r["key"].split("/")[1]: (float(r["latitude"]), float(r["longitude"]))
         for r in rows
@@ -61,7 +63,7 @@ def relink_shops() -> None:
         shops = conn.execute(
             text(
                 "SELECT id, district, latitude, longitude FROM ration_shops "
-                "WHERE latitude IS NOT NULL"
+                "WHERE latitude IS NOT NULL AND longitude IS NOT NULL"
             )
         ).all()
     logger.info(f"Relinking {len(shops)} shops against {len(pins)} geocoded pincodes")
@@ -81,13 +83,14 @@ def relink_shops() -> None:
         pid = min(cands, key=lambda p: _haversine(slat, slon, p[1], p[2]))[0]
         pairs.append((sid, pid))
 
-    values = ",".join(f"({sid},{pid})" for sid, pid in pairs)
+    if not pairs:
+        logger.info(f"Relinked 0 shops ({skipped} skipped: no geocoded pincode in district)")
+        return
+
     with engine.begin() as conn:
         conn.execute(
-            text(
-                f"UPDATE ration_shops s SET pincode_id = v.pid "
-                f"FROM (VALUES {values}) AS v(sid, pid) WHERE s.id = v.sid"
-            )
+            text("UPDATE ration_shops SET pincode_id = :pid WHERE id = :sid"),
+            [{"sid": sid, "pid": pid} for sid, pid in pairs],
         )
     logger.info(f"Relinked {len(pairs)} shops ({skipped} skipped: no geocoded pincode in district)")
 

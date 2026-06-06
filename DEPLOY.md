@@ -50,7 +50,7 @@
 
 ## Local dev (Docker Postgres)
 ```bash
-docker compose up -d           # local Postgres:5433 + Redis
+docker compose up -d           # local Postgres:5433
 alembic upgrade head           # create tables
 python scripts/seed_pincodes.py
 python scripts/discover_shops.py
@@ -58,3 +58,8 @@ python scripts/fuzzy_match.py
 python scripts/scrape_all.py    # full scrape
 uvicorn app.main:app --port 8000
 ```
+
+Manual GitHub Actions runs expose a `task` choice:
+- `scrape`: daily stock scrape only
+- `geo`: weekly coordinates/geocode/local-place refresh only
+- `all`: run both paths

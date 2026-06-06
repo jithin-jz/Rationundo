@@ -43,6 +43,15 @@ def prepare_target():
     log.info("Target schema ready (pg_trgm + tables)")
 
 
+def clear_target():
+    """Clear target tables in FK-safe order before copying fresh rows."""
+    with TgtSession() as tgt:
+        for model in reversed(TABLES):
+            tgt.execute(text(f"DELETE FROM {model.__tablename__}"))
+        tgt.commit()
+    log.info("Target tables cleared")
+
+
 def copy_table(model):
     cols = [c.name for c in model.__table__.columns]
     with SrcSession() as src:
@@ -54,8 +63,6 @@ def copy_table(model):
         return
 
     with TgtSession() as tgt:
-        # Clear existing to make this idempotent
-        tgt.execute(text(f"DELETE FROM {model.__tablename__}"))
         for i in range(0, len(rows), BATCH):
             tgt.execute(insert(model.__table__), rows[i : i + BATCH])
         tgt.commit()
@@ -75,6 +82,7 @@ def main():
     log.info(f"SOURCE: {SOURCE_URL.split('@')[-1]}")
     log.info(f"TARGET: {TARGET_URL.split('@')[-1]}")
     prepare_target()
+    clear_target()
     for model in TABLES:
         copy_table(model)
     log.info("Migration complete.")

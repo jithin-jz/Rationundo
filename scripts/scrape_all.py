@@ -10,16 +10,16 @@ import asyncio
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime
+from datetime import date
 
 import httpx
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import bindparam, create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 from app.models.models import RationShop, ShopStockStatus, StockItem
 from app.worker.scraper import HEADERS, fetch_with_client
-from app.worker.tasks import get_target_month_year
+from app.worker.time_utils import get_target_month_year, now_ist_naive, today_ist
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
@@ -41,7 +41,7 @@ def cleanup_old_months(keep: int = 3):
     Delete stock data for month cycles older than the last `keep` months
     (default: current + previous 2). Keeps the DB small.
     """
-    today = date.today()
+    today = today_ist()
     keep_cycles = []
     y, m = today.year, today.month
     for _ in range(keep):
@@ -57,14 +57,16 @@ def cleanup_old_months(keep: int = 3):
                 """
             DELETE FROM stock_items
             WHERE stock_status_id IN (
-                SELECT id FROM shop_stock_status WHERE month_cycle != ALL(:keep)
+                SELECT id FROM shop_stock_status WHERE month_cycle NOT IN :keep
             )
         """
-            ),
+            ).bindparams(bindparam("keep", expanding=True)),
             {"keep": keep_cycles},
         )
         res = db.execute(
-            text("DELETE FROM shop_stock_status WHERE month_cycle != ALL(:keep)"),
+            text("DELETE FROM shop_stock_status WHERE month_cycle NOT IN :keep").bindparams(
+                bindparam("keep", expanding=True)
+            ),
             {"keep": keep_cycles},
         )
         db.commit()
@@ -83,14 +85,14 @@ def _upsert(shop_id: int, month_cycle: str, result: dict):
 
         if existing:
             existing.is_stock_delivered = result["is_delivered"]
-            existing.last_checked_timestamp = datetime.now()
+            existing.last_checked_timestamp = now_ist_naive()
             db.query(StockItem).filter(StockItem.stock_status_id == existing.id).delete()
             target_id = existing.id
         else:
             ss = ShopStockStatus(
                 shop_id=shop_id,
                 is_stock_delivered=result["is_delivered"],
-                last_checked_timestamp=datetime.now(),
+                last_checked_timestamp=now_ist_naive(),
                 month_cycle=month_cycle,
             )
             db.add(ss)
@@ -167,16 +169,17 @@ def get_checked_today_shop_ids(month_cycle: str) -> set[int]:
     """
     if os.getenv("SCRAPE_FORCE") == "1":
         return set()
+    today = today_ist()
     with Session() as db:
         rows = (
             db.execute(
                 text(
                     """
             SELECT shop_id FROM shop_stock_status
-            WHERE month_cycle = :mc AND last_checked_timestamp::date = CURRENT_DATE
+            WHERE month_cycle = :mc AND last_checked_timestamp::date = :today
         """
                 ),
-                {"mc": month_cycle},
+                {"mc": month_cycle, "today": today},
             )
             .scalars()
             .all()

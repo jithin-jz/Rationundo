@@ -1,7 +1,8 @@
 import time
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, literal_column, select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -14,27 +15,30 @@ router = APIRouter(prefix="/api")
 _stats_cache: dict = {"data": None, "ts": 0.0}
 _STATS_TTL = 300  # seconds; stats only change once per daily scrape
 
-# Haversine distance (km) between a shop's stored coords and a target lat/lon.
-# Used for radius search over the accurate per-shop GPS coordinates.
-_DIST_KM = (
-    "12742 * asin(sqrt(0.5 - cos(radians(latitude - :lat))/2 + "
-    "cos(radians(:lat)) * cos(radians(latitude)) * "
-    "(1 - cos(radians(longitude - :lon)))/2))"
-)
-
-
 async def _shops_near(db, lat: float, lon: float, radius_km: float, limit: int):
     """Return (RationShop, distance_km) within radius, nearest first."""
-    dist = literal_column(_DIST_KM.replace(":lat", str(lat)).replace(":lon", str(lon)))
+    dist = 12742 * func.asin(
+        func.sqrt(
+            0.5
+            - func.cos(func.radians(RationShop.latitude - lat)) / 2
+            + func.cos(func.radians(lat))
+            * func.cos(func.radians(RationShop.latitude))
+            * (1 - func.cos(func.radians(RationShop.longitude - lon)))
+            / 2
+        )
+    )
     stmt = (
         select(RationShop, dist.label("d"))
-        .where(RationShop.latitude.isnot(None))
+        .where(
+            RationShop.latitude.isnot(None),
+            RationShop.longitude.isnot(None),
+            dist <= radius_km,
+        )
         .options(selectinload(RationShop.stock_statuses).selectinload(ShopStockStatus.items))
         .order_by(dist)
         .limit(limit)
     )
-    rows = (await db.execute(stmt)).all()
-    return [(s, d) for s, d in rows if d <= radius_km]
+    return (await db.execute(stmt)).all()
 
 
 # The searchable unit is the shop LOCALITY (taluk), not the 5k-row postal table:
@@ -128,12 +132,12 @@ async def owners(
     db: AsyncSession = Depends(get_db),
 ):
     """Autocomplete shops by owner name (dealer_name holds the shop owner)."""
-    safe_q = q.strip().replace("%", r"\%").replace("_", r"\_")
+    safe_q = q.strip().replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
     shops = (
         (
             await db.execute(
                 select(RationShop)
-                .where(RationShop.dealer_name.ilike(f"%{safe_q}%"))
+                .where(RationShop.dealer_name.ilike(f"%{safe_q}%", escape="\\"))
                 .order_by(RationShop.dealer_name)
                 .limit(10)
             )
@@ -219,7 +223,11 @@ async def list_shops(tso_code: str, db: AsyncSession = Depends(get_db)):
 
 def _build_shop_out(shop: RationShop, distance_km: float | None = None) -> ShopStatusOut:
     latest = (
-        max(shop.stock_statuses, key=lambda s: s.last_checked_timestamp, default=None)
+        max(
+            shop.stock_statuses,
+            key=lambda s: s.last_checked_timestamp or datetime.min,
+            default=None,
+        )
         if shop.stock_statuses
         else None
     )
@@ -284,7 +292,7 @@ async def get_status(pincode_id: int, db: AsyncSession = Depends(get_db)):
     if not pincode:
         raise HTTPException(404, "Pincode not found")
 
-    if pincode.latitude is not None:
+    if pincode.latitude is not None and pincode.longitude is not None:
         near = await _shops_near(db, pincode.latitude, pincode.longitude, radius_km=8.0, limit=50)
         shops_out = [_build_shop_out(s, d) for s, d in near]
     else:
@@ -305,8 +313,8 @@ async def get_status(pincode_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/nearby", response_model=SearchResponse)
 async def nearby(
-    lat: float = Query(ge=8.0, le=13.0),
-    lon: float = Query(ge=74.0, le=78.0),
+    lat: float = Query(ge=7.0, le=14.0),
+    lon: float = Query(ge=73.0, le=79.0),
     radius_km: float = Query(default=5.0, ge=0.5, le=25.0),
     db: AsyncSession = Depends(get_db),
 ):

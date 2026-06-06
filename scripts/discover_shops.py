@@ -34,6 +34,7 @@ async def get_districts(client: httpx.AsyncClient) -> list[tuple[str, str]]:
         f"{BASE}/Stock_Received_Status_Dist.jsp",
         data={"month": "5", "year": "2026", "rotype": "PDS"},
     )
+    r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
     districts = []
     for link in soup.find_all("a", onclick=True):
@@ -60,6 +61,7 @@ async def get_offices(
             "distname": distname,
         },
     )
+    r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
     offices = []
     for link in soup.find_all("a", onclick=True):
@@ -87,6 +89,7 @@ async def get_fps_list(
             "officename": officename,
         },
     )
+    r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
     fps_codes = []
     rows = soup.find_all("tr")

@@ -37,11 +37,13 @@ UPDATE = text(
 
 async def get_districts(client: httpx.AsyncClient) -> list[str]:
     r = await client.get(f"{BASE}/dfso_fps_details")
+    r.raise_for_status()
     return list(dict.fromkeys(re.findall(r"detailsR\('(\d+)'\)", r.text)))
 
 
 async def get_offices(client: httpx.AsyncClient, dist: str) -> list[str]:
     r = await client.post(f"{BASE}/afso_fps_details.action", data={"dist_code": dist})
+    r.raise_for_status()
     return re.findall(r'id="office_code\d+"\s+value="(\d+)"', r.text)
 
 
@@ -50,6 +52,7 @@ async def get_shops(client: httpx.AsyncClient, dist: str, office: str) -> list[d
         f"{BASE}/fps_aso_details.action",
         data={"dist_code": dist, "office_code": office},
     )
+    r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
     rows = []
     for tr in soup.select("#Report tbody tr"):

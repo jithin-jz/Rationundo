@@ -28,7 +28,9 @@ engine = create_engine(settings.database_url.replace("+asyncpg", "+psycopg2"))
 
 def _load_places() -> list[tuple[str, float, float]]:
     """Kerala populated places (name, lat, lon) from the GeoNames India dump."""
-    data = httpx.get(GEONAMES_URL, timeout=120, follow_redirects=True).content
+    resp = httpx.get(GEONAMES_URL, timeout=120, follow_redirects=True)
+    resp.raise_for_status()
+    data = resp.content
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         text_data = z.read("IN.txt").decode("utf-8")
     places = []
@@ -65,7 +67,10 @@ def backfill() -> None:
 
     with engine.begin() as conn:
         shops = conn.execute(
-            text("SELECT id, latitude, longitude FROM ration_shops WHERE latitude IS NOT NULL")
+            text(
+                "SELECT id, latitude, longitude FROM ration_shops "
+                "WHERE latitude IS NOT NULL AND longitude IS NOT NULL"
+            )
         ).all()
 
     pairs = []
@@ -77,16 +82,19 @@ def backfill() -> None:
         if not cands:  # fall back to full scan if grid neighbourhood empty
             cands = places
         name = min(cands, key=lambda p: _haversine(sla, slo, p[1], p[2]))[0]
-        pairs.append((sid, name.replace("'", "''")))
+        pairs.append({"sid": sid, "name": name})
 
-    values = ",".join(f"({sid},'{name}')" for sid, name in pairs)
+    if not pairs:
+        logger.info("Backfilled local_place for 0 shops")
+        return
+
     with engine.begin() as conn:
         conn.execute(
             text(
-                f"UPDATE ration_shops s SET local_place = v.name "
-                f"FROM (VALUES {values}) AS v(sid, name) WHERE s.id = v.sid "
-                f"AND s.local_place IS DISTINCT FROM v.name"
-            )
+                "UPDATE ration_shops SET local_place = :name "
+                "WHERE id = :sid AND local_place IS DISTINCT FROM :name"
+            ),
+            pairs,
         )
     logger.info(f"Backfilled local_place for {len(pairs)} shops")
 
