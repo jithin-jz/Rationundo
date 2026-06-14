@@ -1,0 +1,62 @@
+{% set state = shop.delivery_state or ('full' if shop.is_stock_delivered else 'none') %}
+{% set card_class = 'card-delivered' if state == 'full' else ('card-partial' if state == 'partial' else 'card-pending') %}
+
+<div class="{{ card_class }} rounded-xl shadow-sm border border-gray-100 p-4 animate-slide-up" style="animation-delay: {{ loop_index * 40 }}ms; opacity: 0">
+    <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+            <p class="font-bold text-gray-900">കട നം. {{ shop.ard_number }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">
+                {{ shop.dealer_name or '' }} · {% if shop.local_place %}{{ shop.local_place }}, {% endif %}{{ shop.district }} · {{ shop.month_cycle }}{% if shop.distance_km is not none %} · 📍 {{ "%.1f"|format(shop.distance_km) }} km{% endif %}
+            </p>
+        </div>
+        {% if state == 'full' %}
+        <div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50">
+            <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+            <span class="text-xs sm:text-sm font-semibold text-green-800 malayalam whitespace-nowrap">സ്റ്റോക്ക് എത്തി ✓</span>
+        </div>
+        {% elif state == 'partial' %}
+        <div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
+            <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+            <span class="text-xs sm:text-sm font-semibold text-amber-800 malayalam whitespace-nowrap">ഭാഗികമായി എത്തി</span>
+        </div>
+        {% else %}
+        <div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
+            <div class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
+            <span class="text-xs sm:text-sm font-semibold text-amber-800 malayalam whitespace-nowrap">എത്തിയിട്ടില്ല</span>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if shop.items %}
+    <div class="mt-3 pt-3 border-t border-gray-100">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 malayalam">സാധനങ്ങളുടെ വിശദാംശങ്ങൾ</p>
+        <div class="space-y-1.5">
+            {% for item in shop.items %}
+            {% set allocated = item.allocated_quantity|float %}
+            {% set received = item.received_quantity|float %}
+            {% set pct = ((received / allocated * 100)|round|int) if allocated > 0 else 0 %}
+            {% set ml_name = commodity_ml.get(item.commodity_name, item.commodity_name) %}
+            <div class="flex items-center gap-3 py-1.5">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-800">{{ item.commodity_name }}{% if ml_name != item.commodity_name %} <span class="text-xs text-gray-400 malayalam">{{ ml_name }}</span>{% endif %}</span>
+                        <span class="text-xs font-semibold {{ 'text-kerala-green' if received > 0 else 'text-gray-400' }}">{{ "{:,}".format(received|int) }} / {{ "{:,}".format(allocated|int) }}</span>
+                    </div>
+                    <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full {{ 'bg-kerala-green' if pct >= 80 else ('bg-amber-400' if pct > 0 else 'bg-gray-200') }}" style="width: {{ [pct, 100]|min }}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="mt-3 pt-3 border-t border-gray-100">
+        <p class="text-sm text-gray-400 malayalam">വിശദാംശങ്ങൾ ലഭ്യമല്ല</p>
+    </div>
+    {% endif %}
+
+    {% if shop.last_checked %}
+    <p class="mt-2 text-[11px] text-gray-400">അവസാന അപ്‌ഡേറ്റ്: {{ shop.last_checked.strftime('%d %b, %I:%M %p') if shop.last_checked else '' }}</p>
+    {% endif %}
+</div>

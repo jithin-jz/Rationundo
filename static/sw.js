@@ -1,11 +1,9 @@
-// Shell-only service worker. NEVER caches /api/ — stock data must always be fresh.
-const CACHE = 'rationundo-shell-v6';
+// Shell-only service worker. NEVER caches /api/ or /htmx/ — stock data must always be fresh.
+const CACHE = 'rationundo-shell-v9';
 const SHELL = [
   '/',
-  '/static/app.js?v=5',
-  '/static/style.css?v=5',
+  '/static/app.js?v=6',
   '/static/favicon.svg',
-  '/static/buymeachai.svg?v=1',
   '/static/manifest.json',
 ];
 const SHELL_PATHS = new Set(SHELL.map((path) => new URL(path, self.location.origin).pathname));
@@ -24,8 +22,14 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
-  // Bypass API and non-GET: always hit the network, never cache.
-  if (e.request.method !== 'GET' || url.pathname.startsWith('/api/')) return;
+  // Bypass cross-origin requests, API, HTMX partials, and non-GET:
+  // let the browser handle CSP for third-party scripts, fonts, analytics, and images.
+  if (
+    url.origin !== self.location.origin ||
+    e.request.method !== 'GET' ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/htmx/')
+  ) return;
   // HTML ('/'): network-first so updates show.
   if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request).catch(() => caches.match('/')));
@@ -39,7 +43,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE).then((cache) => cache.put(e.request, response.clone()));
         }
         return response;
-      }).catch(() => hit);
+      }).catch(() => hit || Response.error());
       return hit || fresh;
     })
   );

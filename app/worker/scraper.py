@@ -81,7 +81,7 @@ def _parse_stock_response(html: str) -> dict | None:
     Columns: S.No, Received Date, Commodity, Alloted Quantity, Dispatched Quantity,
              Received Quantity, Truck Chit ID, Release Order Number, Status
     """
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(html, "html.parser")
     rows = soup.find_all("tr")
 
     if len(rows) < 3:

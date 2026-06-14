@@ -1,0 +1,29 @@
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center max-w-lg mx-auto">
+    <div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-kerala-darkgreen tabular-nums" data-count-target="{{ stats.districts }}">{{ stats.districts }}</div>
+        <div class="text-xs text-gray-500 mt-1 font-medium malayalam">ജില്ലകൾ</div>
+    </div>
+    <div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-kerala-darkgreen tabular-nums" data-count-target="{{ stats.shops }}">{{ stats.shops }}</div>
+        <div class="text-xs text-gray-500 mt-1 font-medium malayalam">റേഷൻ കടകൾ</div>
+    </div>
+    <div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-kerala-darkgreen tabular-nums" data-count-target="{{ stats.pincodes }}">{{ stats.pincodes }}</div>
+        <div class="text-xs text-gray-500 mt-1 font-medium malayalam">പിൻകോഡുകൾ</div>
+    </div>
+    <div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-kerala-green tabular-nums" data-count-target="{{ stats.delivered }}">{{ stats.delivered }}</div>
+        <div class="text-xs text-gray-500 mt-1 font-medium malayalam">സ്റ്റോക്ക് എത്തി</div>
+    </div>
+</div>
+{% if stats.last_updated %}
+<script>
+(function() {
+    var lu = document.getElementById('last-updated');
+    if (lu) {
+        var d = new Date("{{ stats.last_updated }}");
+        lu.textContent = 'അവസാന അപ്ഡേറ്റ്: ' + d.toLocaleString('ml-IN', {timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'});
+    }
+})();
+</script>
+{% endif %}

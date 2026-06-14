@@ -1,0 +1,30 @@
+{% if suggestions %}
+{% for item in suggestions %}
+{% set type = item.type %}
+{% set id = item.id %}
+{% set icon_shop %}
+<svg class="w-4 h-4 text-kerala-gold shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+{% endset %}
+{% set icon_place %}
+<svg class="w-4 h-4 text-kerala-green shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+{% endset %}
+<button class="suggestion-item w-full text-left px-4 py-3 transition-colors border-b border-gray-50 last:border-0 flex items-center gap-3"
+        hx-get="/htmx/select?type={{ type }}&id={{ id }}"
+        hx-target="#results"
+        hx-swap="innerHTML"
+        hx-on::after-request="this.closest('[role=listbox]').classList.add('hidden'); document.getElementById('empty-state').classList.add('hidden'); document.getElementById('results').classList.remove('hidden');">
+    {{ icon_shop if type == 'shop' else icon_place }}
+    <div class="min-w-0 flex-1">
+        <div class="font-semibold text-gray-800 text-[15px] truncate">{{ item.label }}</div>
+        <div class="text-xs text-gray-400 truncate">{{ item.sublabel }}</div>
+    </div>
+    {% if type == 'shop' %}
+    <span class="shrink-0 text-[10px] font-semibold bg-kerala-gold/10 text-kerala-gold px-2 py-0.5 rounded malayalam">കട</span>
+    {% else %}
+    <span class="shrink-0 text-[10px] font-semibold bg-kerala-green/5 text-kerala-green px-2 py-0.5 rounded malayalam">സ്ഥലം</span>
+    {% endif %}
+</button>
+{% endfor %}
+{% else %}
+<div class="px-5 py-4 text-sm text-gray-400 malayalam">ഫലങ്ങൾ ഒന്നും കണ്ടെത്തിയില്ല</div>
+{% endif %}

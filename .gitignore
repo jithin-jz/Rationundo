@@ -5,3 +5,7 @@ __pycache__/
 dist/
 .venv/
 .uv-cache/
+.pytest_cache/
+pytest-cache-files-*/
+.ruff_cache/
+*.log

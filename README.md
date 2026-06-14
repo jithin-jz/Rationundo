@@ -77,16 +77,19 @@ can run only the daily scrape, only the weekly geo refresh, or both.
 
 ```
 app/
-├── main.py           # FastAPI app entry + /health
-├── config.py         # Settings (pydantic-settings)
-├── database.py       # Async engine (Supabase pooler-aware)
-├── schemas.py        # Pydantic response models
-├── api/routes.py     # API endpoints
-├── models/models.py  # SQLAlchemy ORM models
+├── main.py            # FastAPI app entry + /health
+├── config.py          # Settings (pydantic-settings)
+├── database.py        # Async engine (Supabase pooler-aware)
+├── schemas.py         # Pydantic response models
+├── api/routes.py      # Thin JSON API endpoints
+├── api/htmx_routes.py # Thin HTMX fragment endpoints
+├── services/          # Business logic shared by API, HTMX, and workers
+├── repositories/      # Database query helpers
+├── models/models.py   # SQLAlchemy ORM models
 └── worker/
-    ├── scraper.py    # ePOS fetch + parser helpers
-    ├── tasks.py      # Sequential scrape helper
-    └── time_utils.py # IST month-cycle helpers
+    ├── scraper.py     # ePOS fetch + parser helpers
+    ├── tasks.py       # Sequential scrape helper
+    └── time_utils.py  # IST month-cycle helpers
 scripts/
 ├── seed_pincodes.py    # Load pincode master data
 ├── discover_shops.py   # One-time shop registry builder
@@ -94,8 +97,8 @@ scripts/
 ├── scrape_all.py       # Daily stock scraper (used by CI cron)
 ├── sync_to_supabase.py # One-time local → Supabase migration
 └── verify.py           # DB + API smoke test
-templates/index.html    # Single-page UI
-static/                 # app.js, style.css, favicon.svg
+templates/              # Page shell + HTMX partials
+static/                 # app.js, service worker, manifest, favicon.svg
 ```
 
 ## Disclaimer

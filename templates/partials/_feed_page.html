@@ -1,0 +1,14 @@
+{% for shop in shops_page %}
+{% set loop_index = offset + loop.index0 %}
+{% include "partials/_shop_card.html" %}
+{% endfor %}
+
+{% if has_more %}
+<div id="feed-sentinel"
+     hx-get="/htmx/feed?{{ feed_query }}&page={{ next_page }}"
+     hx-trigger="revealed"
+     hx-swap="outerHTML"
+     hx-target="this"
+     class="h-px">
+</div>
+{% endif %}

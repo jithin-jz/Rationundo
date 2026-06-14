@@ -10,6 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from sqlalchemy import text
 
+from app.api.htmx_routes import router as htmx_router
 from app.api.routes import router as api_router
 from app.database import engine
 
@@ -24,35 +25,45 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 app.include_router(api_router)
+app.include_router(htmx_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-_CSP = "; ".join(
-    [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data:",
-        (
-            "connect-src 'self' https://www.google-analytics.com "
-            "https://region1.google-analytics.com https://analytics.google.com"
-        ),
-        "manifest-src 'self'",
-        "worker-src 'self'",
-        "object-src 'none'",
-        "base-uri 'self'",
-        "frame-ancestors 'none'",
-        "form-action 'self'",
-    ]
-)
+_CSP_DIRECTIVES = [
+    "default-src 'self'",
+    (
+        "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com "
+        "https://unpkg.com https://cdn.jsdelivr.net"
+    ),
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: https://buymeachai.ezee.li",
+    (
+        "connect-src 'self' https://www.google-analytics.com "
+        "https://region1.google-analytics.com https://analytics.google.com "
+        "https://www.googletagmanager.com"
+    ),
+    "manifest-src 'self'",
+    "worker-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+]
+
+
+def _content_security_policy(request: Request) -> str:
+    directives = list(_CSP_DIRECTIVES)
+    if request.url.hostname in {"127.0.0.1", "localhost"}:
+        directives.remove("frame-ancestors 'none'")
+    return "; ".join(directives)
 
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
-    response.headers.setdefault("Content-Security-Policy", _CSP)
+    response.headers.setdefault("Content-Security-Policy", _content_security_policy(request))
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Permissions-Policy", "geolocation=(self)")
