@@ -1,5 +1,18 @@
 // ===== Minimal app.js — HTMX handles most interactions =====
 
+const searchInput = document.getElementById('search-input');
+const ownerInput = document.getElementById('owner-input');
+const suggestions = document.getElementById('suggestions');
+const ownerSuggestions = document.getElementById('owner-suggestions');
+
+const debounce = (fn, delay = 200) => {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
+};
+
 // ===== Near me: browser geolocation -> htmx.ajax =====
 const nearMeBtn = document.getElementById('near-me-btn');
 const resultsSection = document.getElementById('results');
@@ -79,27 +92,78 @@ nearMeBtn?.addEventListener('click', async () => {
 });
 
 
+// ===== Search autocomplete =====
+async function loadSuggestions(input, target, endpoint) {
+    const q = input.value.trim();
+    if (q.length < 2) {
+        target.innerHTML = '';
+        target.classList.add('hidden');
+        return;
+    }
+
+    const response = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`, {
+        headers: {'HX-Request': 'true'}
+    });
+    if (!response.ok) return;
+
+    target.innerHTML = await response.text();
+    target.classList.remove('hidden');
+}
+
+searchInput?.addEventListener('input', debounce(() => {
+    loadSuggestions(searchInput, suggestions, '/htmx/autocomplete');
+}));
+
+ownerInput?.addEventListener('input', debounce(() => {
+    loadSuggestions(ownerInput, ownerSuggestions, '/htmx/owners');
+}));
+
+document.addEventListener('click', async (e) => {
+    const button = e.target.closest(
+        '#suggestions button[data-select-url], #owner-suggestions button[data-select-url]'
+    );
+    if (!button) return;
+
+    e.preventDefault();
+    const url = button.dataset.selectUrl;
+    const response = await fetch(url, {headers: {'HX-Request': 'true'}});
+    if (!response.ok) return;
+
+    resultsSection.innerHTML = await response.text();
+    resultsSection.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    suggestions?.classList.add('hidden');
+    ownerSuggestions?.classList.add('hidden');
+
+    const params = new URLSearchParams(url.split('?')[1] || '');
+    const type = params.get('type');
+    const id = params.get('id');
+    if ((type === 'shop' || type === 'place') && id) {
+        history.replaceState(null, '', `?${type}=${encodeURIComponent(id)}`);
+    }
+});
+
+
 // ===== Close suggestions on outside click =====
 document.addEventListener('click', (e) => {
     if (!e.target.closest('#search-container')) {
-        document.getElementById('suggestions')?.classList.add('hidden');
+        suggestions?.classList.add('hidden');
     }
     if (!e.target.closest('#owner-container')) {
-        document.getElementById('owner-suggestions')?.classList.add('hidden');
+        ownerSuggestions?.classList.add('hidden');
     }
 });
 
 // Close on Escape
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        document.getElementById('suggestions')?.classList.add('hidden');
-        document.getElementById('owner-suggestions')?.classList.add('hidden');
+        suggestions?.classList.add('hidden');
+        ownerSuggestions?.classList.add('hidden');
     }
 });
 
 
 // ===== Rotating placeholder =====
-const searchInput = document.getElementById('search-input');
 const placeholders = ["കടയുടെ നമ്പർ...", "സ്ഥലപ്പേര്..."];
 let phIndex = 0;
 setInterval(() => {

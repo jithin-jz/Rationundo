@@ -1,8 +1,8 @@
 // Shell-only service worker. NEVER caches /api/ or /htmx/ — stock data must always be fresh.
-const CACHE = 'rationundo-shell-v9';
+const CACHE = 'rationundo-shell-v10';
 const SHELL = [
   '/',
-  '/static/app.js?v=6',
+  '/static/app.js?v=7',
   '/static/favicon.svg',
   '/static/manifest.json',
 ];

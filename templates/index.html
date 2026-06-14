@@ -98,12 +98,6 @@
                         aria-label="Search by shop number"
                         aria-controls="suggestions"
                         aria-autocomplete="list"
-                        hx-get="/htmx/autocomplete"
-                        hx-trigger="input changed delay:200ms, search"
-                        hx-target="#suggestions"
-                        hx-swap="innerHTML"
-                        hx-params="q"
-                        hx-on::after-request="if(this.value.trim().length >= 2) document.getElementById('suggestions').classList.remove('hidden'); else document.getElementById('suggestions').classList.add('hidden');"
                     >
                     <div class="absolute right-4 top-1/2 -translate-y-1/2">
                         <svg class="h-5 w-5 text-kerala-green/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,12 +126,6 @@
                         aria-label="Search by owner name"
                         aria-controls="owner-suggestions"
                         aria-autocomplete="list"
-                        hx-get="/htmx/owners"
-                        hx-trigger="input changed delay:200ms"
-                        hx-target="#owner-suggestions"
-                        hx-swap="innerHTML"
-                        hx-params="q"
-                        hx-on::after-request="if(this.value.trim().length >= 2) document.getElementById('owner-suggestions').classList.remove('hidden'); else document.getElementById('owner-suggestions').classList.add('hidden');"
                     >
                     <div class="absolute right-4 top-1/2 -translate-y-1/2">
                         <svg class="h-5 w-5 text-kerala-green/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -263,7 +251,7 @@
         </div>
     </footer>
 
-    <script src="/static/app.js?v=6"></script>
+    <script src="/static/app.js?v=7"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
