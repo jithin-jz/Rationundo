@@ -4,6 +4,9 @@ const searchInput = document.getElementById('search-input');
 const ownerInput = document.getElementById('owner-input');
 const suggestions = document.getElementById('suggestions');
 const ownerSuggestions = document.getElementById('owner-suggestions');
+const districtSelect = document.getElementById('sel-district');
+const talukSelect = document.getElementById('sel-taluk');
+const talukWrap = document.getElementById('taluk-wrap');
 
 const debounce = (fn, delay = 200) => {
     let timer;
@@ -142,6 +145,61 @@ document.addEventListener('click', async (e) => {
         history.replaceState(null, '', `?${type}=${encodeURIComponent(id)}`);
     }
 });
+
+
+// ===== Browse: District -> Taluk -> Shops =====
+function showResultsLoading(message) {
+    emptyState.classList.add('hidden');
+    resultsSection.classList.remove('hidden');
+    resultsSection.innerHTML = `
+        <div class="text-center py-16">
+            <div class="inline-block w-8 h-8 border-[3px] border-kerala-green/20 border-t-kerala-green rounded-full animate-spin"></div>
+            <p class="mt-4 text-sm text-gray-500 malayalam">${message}</p>
+        </div>`;
+}
+
+async function loadDistricts() {
+    if (!districtSelect) return;
+    const response = await fetch('/htmx/districts', {headers: {'HX-Request': 'true'}});
+    if (!response.ok) return;
+    districtSelect.insertAdjacentHTML('beforeend', await response.text());
+}
+
+districtSelect?.addEventListener('change', async () => {
+    resultsSection.classList.add('hidden');
+    resultsSection.innerHTML = '';
+    talukSelect.innerHTML = '<option value="">— താലൂക്ക് —</option>';
+
+    if (!districtSelect.value) {
+        talukWrap.classList.add('hidden');
+        return;
+    }
+
+    talukWrap.classList.remove('hidden');
+    const url = `/htmx/taluks?district=${encodeURIComponent(districtSelect.value)}`;
+    const response = await fetch(url, {headers: {'HX-Request': 'true'}});
+    if (!response.ok) return;
+    talukSelect.insertAdjacentHTML('beforeend', await response.text());
+});
+
+talukSelect?.addEventListener('change', async () => {
+    if (!talukSelect.value) {
+        resultsSection.classList.add('hidden');
+        resultsSection.innerHTML = '';
+        return;
+    }
+
+    showResultsLoading('കടകൾ ലോഡ് ചെയ്യുന്നു...');
+    const params = new URLSearchParams({
+        tso_code: talukSelect.value,
+        district: districtSelect.value
+    });
+    const response = await fetch(`/htmx/shops?${params}`, {headers: {'HX-Request': 'true'}});
+    if (!response.ok) return;
+    resultsSection.innerHTML = await response.text();
+});
+
+loadDistricts();
 
 
 // ===== Close suggestions on outside click =====

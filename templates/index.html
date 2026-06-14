@@ -157,33 +157,15 @@
                 <label class="text-xs font-semibold text-gray-500 malayalam">ജില്ല തിരഞ്ഞെടുക്കുക</label>
                 <select id="sel-district"
                         class="mt-1 w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-kerala-green/20 malayalam"
-                        hx-get="/htmx/taluks"
-                        hx-trigger="change"
-                        hx-target="#sel-taluk"
-                        hx-swap="innerHTML"
-                        name="district"
-                        hx-on::before-request="document.getElementById('taluk-wrap').classList.remove('hidden'); document.getElementById('results').classList.add('hidden'); document.getElementById('results').innerHTML = '';"
-                        hx-on::after-request="if(!this.value) { document.getElementById('taluk-wrap').classList.add('hidden'); }">
+                        name="district">
                     <option value="">— ജില്ല —</option>
                 </select>
-                <!-- Load districts on page load -->
-                <div hx-get="/htmx/districts"
-                     hx-trigger="load"
-                     hx-target="#sel-district"
-                     hx-swap="beforeend"
-                     style="display:none"></div>
             </div>
             <div id="taluk-wrap" class="hidden">
                 <label class="text-xs font-semibold text-gray-500 malayalam">താലൂക്ക് / ഓഫീസ്</label>
                 <select id="sel-taluk"
                         class="mt-1 w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-kerala-green/20"
-                        name="tso_code"
-                        hx-get="/htmx/shops"
-                        hx-trigger="change"
-                        hx-target="#results"
-                        hx-swap="innerHTML"
-                        hx-include="[name='district']"
-                        hx-on::before-request="document.getElementById('empty-state').classList.add('hidden'); document.getElementById('results').classList.remove('hidden'); document.getElementById('results').innerHTML = '<div class=\'text-center py-16\'><div class=\'inline-block w-8 h-8 border-[3px] border-kerala-green/20 border-t-kerala-green rounded-full animate-spin\'></div><p class=\'mt-4 text-sm text-gray-500 malayalam\'>കടകൾ ലോഡ് ചെയ്യുന്നു...</p></div>';">
+                        name="tso_code">
                     <option value="">— താലൂക്ക് —</option>
                 </select>
             </div>
@@ -251,7 +233,7 @@
         </div>
     </footer>
 
-    <script src="/static/app.js?v=7"></script>
+    <script src="/static/app.js?v=8"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
