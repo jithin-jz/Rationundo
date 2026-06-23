@@ -88,6 +88,7 @@ def _empty_response(request: Request):
 
 # ---- Autocomplete ----
 
+
 @router.get("/autocomplete", response_class=HTMLResponse)
 async def htmx_autocomplete(
     request: Request,
@@ -116,6 +117,7 @@ async def htmx_owners(
 
 # ---- Select (shop or place) ----
 
+
 @router.get("/select", response_class=HTMLResponse)
 async def htmx_select(
     request: Request,
@@ -137,6 +139,7 @@ async def htmx_select(
 
 
 # ---- Infinite scroll feed page ----
+
 
 @router.get("/feed", response_class=HTMLResponse)
 async def htmx_feed(
@@ -195,6 +198,7 @@ async def htmx_feed(
 
 # ---- Districts & Taluks ----
 
+
 @router.get("/districts", response_class=HTMLResponse)
 async def htmx_districts(
     request: Request,
@@ -226,6 +230,7 @@ async def htmx_taluks(
 
 # ---- Shops by taluk ----
 
+
 @router.get("/shops", response_class=HTMLResponse)
 async def htmx_shops(
     request: Request,
@@ -250,6 +255,7 @@ async def htmx_shops(
 
 
 # ---- Nearby ----
+
 
 @router.get("/nearby", response_class=HTMLResponse)
 async def htmx_nearby(
@@ -277,6 +283,7 @@ async def htmx_nearby(
 
 
 # ---- Stats ----
+
 
 @router.get("/stats", response_class=HTMLResponse)
 async def htmx_stats(
