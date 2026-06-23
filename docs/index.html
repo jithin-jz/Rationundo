@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RationUndo · Documentation</title>
+    <link rel="icon" type="image/svg+xml" href="../static/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-kerala-gold: #D4A843;
+            --color-kerala-green: #1B5E20;
+            --color-kerala-darkgreen: #0D3B14;
+            --color-kerala-cream: #FAFAF6;
+        }
+        @layer base {
+            body { font-family: 'DM Sans', 'Noto Sans Malayalam', system-ui, sans-serif; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+            code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+            ::-webkit-scrollbar { width: 8px; height: 8px; }
+            ::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+        }
+        @utility malayalam { font-family: 'Noto Sans Malayalam', 'DM Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-kerala-cream text-gray-800 antialiased">
+
+<!-- Layout -->
+<div class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex flex-col w-64 shrink-0 border-r border-gray-200 bg-white sticky top-0 h-screen overflow-y-auto">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <a href="#top" class="block">
+                <div class="text-lg font-extrabold malayalam">റേഷൻ <span class="text-kerala-gold">ഉണ്ടോ?</span></div>
+                <div class="text-[10px] tracking-wide text-gray-400 mt-0.5">DOCUMENTATION</div>
+            </a>
+        </div>
+        <nav class="px-3 py-4 text-sm space-y-0.5">
+            <a href="#overview"     class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Overview</a>
+            <a href="#how-it-works" class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">How it works</a>
+            <a href="#features"     class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Features</a>
+            <a href="#tech-stack"   class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Tech stack</a>
+            <a href="#architecture" class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Architecture</a>
+            <a href="#data-model"   class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Data model</a>
+            <a href="#api"          class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">API reference</a>
+            <a href="#local-dev"    class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Local development</a>
+            <a href="#scraper"      class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">The scraper</a>
+            <a href="#deployment"   class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Deployment</a>
+            <a href="#structure"    class="block px-3 py-2 rounded-lg hover:bg-green-50 hover:text-kerala-green transition-colors">Project structure</a>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 min-w-0">
+
+        <!-- Hero -->
+        <header id="top" class="bg-kerala-darkgreen text-white">
+            <div class="max-w-3xl mx-auto px-6 py-12 sm:py-16">
+                <span class="inline-block text-[11px] font-semibold tracking-wider uppercase bg-kerala-gold/20 text-kerala-gold px-3 py-1 rounded-full">Documentation</span>
+                <h1 class="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">RationUndo <span class="malayalam text-kerala-gold">· റേഷൻ ഉണ്ടോ?</span></h1>
+                <p class="mt-3 text-green-100/90 leading-relaxed">Track ration shop (Fair Price Shop) stock delivery status for Kerala citizens — check whether this month's commodities have arrived at your shop.</p>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <a href="https://rationundo.onrender.com" class="inline-flex items-center gap-2 bg-kerala-gold text-kerala-darkgreen font-semibold text-sm px-4 py-2 rounded-lg hover:brightness-110 transition">Live site →</a>
+                    <a href="#local-dev" class="inline-flex items-center gap-2 bg-white/10 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:bg-white/20 transition">Get started</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-3xl mx-auto px-6 py-10 space-y-14">
+
+            <!-- Overview -->
+            <section id="overview" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Overview</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">The official portal (<code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded">epos.kerala.gov.in</code>) is slow and only indexes data by District → Taluk → Shop number. RationUndo solves this with a daily scraper that pulls all shop stock data into PostgreSQL, so every user search is served from the local database with <strong>zero external calls at request time</strong> and sub-200ms responses.</p>
+                <div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
+                        <div class="text-2xl font-extrabold text-kerala-green">14</div>
+                        <div class="text-xs text-gray-500 mt-1">Districts</div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
+                        <div class="text-2xl font-extrabold text-kerala-green">14k+</div>
+                        <div class="text-xs text-gray-500 mt-1">Shops</div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
+                        <div class="text-2xl font-extrabold text-kerala-green">5k+</div>
+                        <div class="text-xs text-gray-500 mt-1">Pincodes</div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
+                        <div class="text-2xl font-extrabold text-kerala-green">&lt;200ms</div>
+                        <div class="text-xs text-gray-500 mt-1">Response</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How it works -->
+            <section id="how-it-works" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">How it works</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">The read path and the write path are fully decoupled. Users only ever touch the local database; the slow government portal is only hit by a scheduled background job.</p>
+                <pre class="mt-5 bg-kerala-darkgreen text-green-100 text-xs sm:text-sm rounded-xl p-5 overflow-x-auto leading-relaxed">User → FastAPI → PostgreSQL (Supabase) → Response
+                       ↑
+   GitHub Actions (daily 2 AM IST) → httpx scraper → epos.kerala.gov.in</pre>
+            </section>
+
+            <!-- Features -->
+            <section id="features" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Features</h2>
+                <div class="mt-4 grid sm:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <h3 class="font-semibold text-gray-900">🔎 Flexible search</h3>
+                        <p class="text-sm text-gray-600 mt-1.5">By shop number, pincode, or place name with fuzzy autocomplete powered by <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">pg_trgm</code>.</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <h3 class="font-semibold text-gray-900">📍 Near me</h3>
+                        <p class="text-sm text-gray-600 mt-1.5">GPS search returns the nearest shops sorted by distance (km) using a haversine calculation.</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <h3 class="font-semibold text-gray-900">🗂️ Browse</h3>
+                        <p class="text-sm text-gray-600 mt-1.5">Drill down District → Taluk → Shop with per-commodity allocated vs received progress bars.</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <h3 class="font-semibold text-gray-900">📲 Installable PWA</h3>
+                        <p class="text-sm text-gray-600 mt-1.5">Malayalam-first UI with an offline app shell via a service worker.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tech stack -->
+            <section id="tech-stack" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Tech stack</h2>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-100 rounded-xl overflow-hidden bg-white">
+                        <tbody class="divide-y divide-gray-100">
+                            <tr><td class="px-4 py-3 font-semibold text-gray-700 w-40">Backend</td><td class="px-4 py-3 text-gray-600">FastAPI + SQLAlchemy (async) + asyncpg</td></tr>
+                            <tr><td class="px-4 py-3 font-semibold text-gray-700">Database</td><td class="px-4 py-3 text-gray-600">PostgreSQL with <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">pg_trgm</code> (Supabase in production)</td></tr>
+                            <tr><td class="px-4 py-3 font-semibold text-gray-700">Scraper</td><td class="px-4 py-3 text-gray-600">httpx + BeautifulSoup, run as a daily GitHub Actions cron</td></tr>
+                            <tr><td class="px-4 py-3 font-semibold text-gray-700">Frontend</td><td class="px-4 py-3 text-gray-600">Jinja2 + HTMX + TailwindCSS + vanilla JS</td></tr>
+                            <tr><td class="px-4 py-3 font-semibold text-gray-700">Hosting</td><td class="px-4 py-3 text-gray-600">Render (web) + Supabase (DB) + GitHub Actions (scraper)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Architecture -->
+            <section id="architecture" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Architecture</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">The app follows a layered design so business logic is shared across the JSON API, the HTMX fragment endpoints, and the background workers.</p>
+                <ul class="mt-4 space-y-3">
+                    <li class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><span class="font-semibold text-kerala-green">api/</span> <span class="text-gray-600 text-sm">— thin routers. <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">routes.py</code> returns JSON; <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">htmx_routes.py</code> returns rendered HTML fragments.</span></li>
+                    <li class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><span class="font-semibold text-kerala-green">services/</span> <span class="text-gray-600 text-sm">— business logic (status derivation, sorting, caching) shared by all entry points.</span></li>
+                    <li class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><span class="font-semibold text-kerala-green">repositories/</span> <span class="text-gray-600 text-sm">— database query helpers, including raw SQL for trigram and geo searches.</span></li>
+                    <li class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><span class="font-semibold text-kerala-green">worker/</span> <span class="text-gray-600 text-sm">— ePOS fetch/parse helpers and IST month-cycle utilities used by the scraper.</span></li>
+                </ul>
+            </section>
+
+            <!-- Data model -->
+            <section id="data-model" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Data model</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">Four tables capture shops, their postal locality, and monthly stock status.</p>
+                <div class="mt-4 space-y-3 text-sm">
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <code class="font-semibold text-kerala-green">pincodes</code>
+                        <p class="text-gray-600 mt-1">Postal master data — pincode, post office, district, optional lat/long. Trigram-indexed on post office name.</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <code class="font-semibold text-kerala-green">ration_shops</code>
+                        <p class="text-gray-600 mt-1">ARD number, dealer, district, taluk code (<code class="text-xs bg-gray-100 px-1 py-0.5 rounded">tso_code</code>), location, and coordinates. Linked to a pincode.</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <code class="font-semibold text-kerala-green">shop_stock_status</code>
+                        <p class="text-gray-600 mt-1">One row per shop per month cycle (unique on <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">shop_id + month_cycle</code>) with a delivery flag and last-checked timestamp.</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                        <code class="font-semibold text-kerala-green">stock_items</code>
+                        <p class="text-gray-600 mt-1">Per-commodity allocated vs received quantities and arrival date for each status row.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API reference -->
+            <section id="api" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">API reference</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">JSON endpoints under <code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded">/api</code>. HTMX fragment equivalents live under <code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded">/htmx</code>. All requests are rate-limited to 120/minute.</p>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-100 rounded-xl overflow-hidden bg-white">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                            <tr><th class="px-4 py-2.5 text-left">Method</th><th class="px-4 py-2.5 text-left">Path</th><th class="px-4 py-2.5 text-left">Description</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/autocomplete?q=</td><td class="px-4 py-2.5 text-gray-600">Shop numbers, pincodes, or fuzzy place names</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/owners?q=</td><td class="px-4 py-2.5 text-gray-600">Autocomplete shops by dealer name</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/stats</td><td class="px-4 py-2.5 text-gray-600">Landing-page counts (cached)</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/districts</td><td class="px-4 py-2.5 text-gray-600">List all districts</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/taluks?district=</td><td class="px-4 py-2.5 text-gray-600">Taluks/offices for a district</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/shops?tso_code=</td><td class="px-4 py-2.5 text-gray-600">Shops in a taluk with stock status</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/shop/{shop_id}</td><td class="px-4 py-2.5 text-gray-600">Stock status for a single shop</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/status/{pincode_id}</td><td class="px-4 py-2.5 text-gray-600">Shops near a pincode</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-green-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/nearby?lat=&lon=</td><td class="px-4 py-2.5 text-gray-600">Nearest shops to a GPS location</td></tr>
+                            <tr><td class="px-4 py-2.5"><span class="text-blue-700 font-mono text-xs font-semibold">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/health</td><td class="px-4 py-2.5 text-gray-600">DB check + data freshness (stale if &gt;36h)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Local dev -->
+            <section id="local-dev" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Local development</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">Configure <code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded">.env</code> from <code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded">.env.example</code> (set <code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded">DATABASE_URL</code>), then:</p>
+                <pre class="mt-4 bg-gray-900 text-gray-100 text-xs sm:text-sm rounded-xl p-5 overflow-x-auto leading-relaxed"><span class="text-gray-500"># 1. Start local Postgres (port 5433)</span>
+docker compose up -d
+
+<span class="text-gray-500"># 2. Install deps</span>
+pip install -e ".[dev]"
+
+<span class="text-gray-500"># 3. Create tables</span>
+alembic upgrade head
+
+<span class="text-gray-500"># 4. Seed pincodes + discover shops + link + scrape</span>
+python scripts/seed_pincodes.py
+python scripts/discover_shops.py
+python scripts/fuzzy_match.py
+python scripts/scrape_all.py
+
+<span class="text-gray-500"># 5. Run the server</span>
+uvicorn app.main:app --reload --port 8000</pre>
+                <div class="mt-4 flex gap-3 text-sm">
+                    <div class="bg-white rounded-lg border border-gray-100 px-4 py-3 shadow-sm"><span class="text-gray-500">Tests:</span> <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">pytest -q</code></div>
+                    <div class="bg-white rounded-lg border border-gray-100 px-4 py-3 shadow-sm"><span class="text-gray-500">Lint:</span> <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">ruff check .</code></div>
+                </div>
+            </section>
+
+            <!-- Scraper -->
+            <section id="scraper" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">The scraper</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">A daily GitHub Actions cron runs <code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded">scripts/scrape_all.py</code> at 2 AM IST. It:</p>
+                <ul class="mt-4 space-y-2 text-sm text-gray-600 list-disc pl-5">
+                    <li>Refreshes only pending/partial shops and <strong>skips fully-received ones</strong>, since those won't change.</li>
+                    <li>Resumes safely after a timeout by skipping shops already checked today.</li>
+                    <li>Uses a configurable concurrency cap (<code class="text-xs bg-gray-100 px-1 py-0.5 rounded">SCRAPE_CONCURRENCY</code>) with polite jitter.</li>
+                    <li>Prunes stock data older than the last 3 month cycles to keep the DB small.</li>
+                    <li>A weekly job refreshes shop coordinates and re-links pincodes.</li>
+                </ul>
+            </section>
+
+            <!-- Deployment -->
+            <section id="deployment" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Deployment</h2>
+                <p class="mt-3 leading-relaxed text-gray-600">All three services run on free tiers:</p>
+                <ul class="mt-4 space-y-2 text-sm text-gray-600 list-disc pl-5">
+                    <li><strong>Render</strong> hosts the FastAPI web service (<code class="text-xs bg-gray-100 px-1 py-0.5 rounded">render.yaml</code>).</li>
+                    <li><strong>Supabase</strong> hosts PostgreSQL; the engine is configured for the transaction pooler (NullPool, disabled prepared statements).</li>
+                    <li><strong>GitHub Actions</strong> runs the daily scraper and weekly geo refresh.</li>
+                </ul>
+                <p class="mt-3 text-sm text-gray-500">See <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">DEPLOY.md</code> for the full setup. Remember to run <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">alembic upgrade head</code> against the production DB after schema changes.</p>
+            </section>
+
+            <!-- Structure -->
+            <section id="structure" class="scroll-mt-6">
+                <h2 class="text-2xl font-bold text-gray-900">Project structure</h2>
+                <pre class="mt-4 bg-gray-900 text-gray-100 text-xs rounded-xl p-5 overflow-x-auto leading-relaxed">app/
+├── main.py            <span class="text-gray-500"># FastAPI entry + /health + security headers</span>
+├── config.py          <span class="text-gray-500"># Settings (pydantic-settings)</span>
+├── database.py        <span class="text-gray-500"># Async engine (Supabase pooler-aware)</span>
+├── schemas.py         <span class="text-gray-500"># Pydantic response models</span>
+├── api/routes.py      <span class="text-gray-500"># JSON API endpoints</span>
+├── api/htmx_routes.py <span class="text-gray-500"># HTMX fragment endpoints</span>
+├── services/          <span class="text-gray-500"># Shared business logic</span>
+├── repositories/      <span class="text-gray-500"># Database query helpers</span>
+├── models/models.py   <span class="text-gray-500"># SQLAlchemy ORM models</span>
+└── worker/
+    ├── scraper.py     <span class="text-gray-500"># ePOS fetch + parser helpers</span>
+    └── time_utils.py  <span class="text-gray-500"># IST month-cycle helpers</span>
+scripts/               <span class="text-gray-500"># seed, discover, scrape, verify, migrate</span>
+templates/             <span class="text-gray-500"># Page shell + HTMX partials</span>
+static/                <span class="text-gray-500"># app.js, service worker, manifest</span></pre>
+            </section>
+
+            <!-- Disclaimer -->
+            <section class="border-t border-gray-200 pt-8">
+                <p class="text-xs text-gray-400 leading-relaxed">Not affiliated with the Government of Kerala. Data sourced from the public <code class="text-[11px] bg-gray-100 px-1 py-0.5 rounded">epos.kerala.gov.in</code> portal — some shop data may be unavailable or incomplete. Licensed under MIT © 2026 Jithin.</p>
+            </section>
+
+        </div>
+
+        <footer class="bg-kerala-darkgreen text-green-200/70 text-center text-xs py-6">
+            RationUndo · Kerala Stock Delivery Tracker — built with FastAPI, HTMX &amp; TailwindCSS
+        </footer>
+    </main>
+</div>
+
+</body>
+</html>
