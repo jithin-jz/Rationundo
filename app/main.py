@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.api.htmx_routes import router as htmx_router
 from app.api.routes import router as api_router
 from app.database import engine
+from app.worker.time_utils import now_ist_naive
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
@@ -91,6 +92,23 @@ async def health():
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
-        return {"status": "ok", "db": "ok"}
+            result = await conn.execute(
+                text("SELECT max(last_checked_timestamp) FROM shop_stock_status")
+            )
+            last = result.scalar()
     except Exception:
         return JSONResponse(status_code=503, content={"status": "degraded", "db": "down"})
+
+    # The scraper runs daily; if data is older than ~36h something is wrong upstream.
+    stale = True
+    age_hours: float | None = None
+    if last is not None:
+        age_hours = round((now_ist_naive() - last).total_seconds() / 3600, 1)
+        stale = age_hours > 36
+
+    return {
+        "status": "stale" if stale else "ok",
+        "db": "ok",
+        "last_updated": last.isoformat() if last else None,
+        "data_age_hours": age_hours,
+    }

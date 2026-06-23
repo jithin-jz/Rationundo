@@ -98,6 +98,8 @@
                         aria-label="Search by shop number"
                         aria-controls="suggestions"
                         aria-autocomplete="list"
+                        role="combobox"
+                        aria-expanded="false"
                     >
                     <div class="absolute right-4 top-1/2 -translate-y-1/2">
                         <svg class="h-5 w-5 text-kerala-green/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,6 +128,8 @@
                         aria-label="Search by owner name"
                         aria-controls="owner-suggestions"
                         aria-autocomplete="list"
+                        role="combobox"
+                        aria-expanded="false"
                     >
                     <div class="absolute right-4 top-1/2 -translate-y-1/2">
                         <svg class="h-5 w-5 text-kerala-green/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -233,7 +237,7 @@
         </div>
     </footer>
 
-    <script src="/static/app.js?v=8"></script>
+    <script src="/static/app.js?v=9"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

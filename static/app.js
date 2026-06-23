@@ -101,16 +101,65 @@ async function loadSuggestions(input, target, endpoint) {
     if (q.length < 2) {
         target.innerHTML = '';
         target.classList.add('hidden');
+        input.setAttribute('aria-expanded', 'false');
+        input.removeAttribute('aria-activedescendant');
         return;
     }
 
-    const response = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`, {
-        headers: {'HX-Request': 'true'}
-    });
+    let response;
+    try {
+        response = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`, {
+            headers: {'HX-Request': 'true'}
+        });
+    } catch {
+        return; // network blip — keep the last suggestions rather than flashing an error
+    }
     if (!response.ok) return;
 
     target.innerHTML = await response.text();
     target.classList.remove('hidden');
+    input.setAttribute('aria-expanded', 'true');
+    input.removeAttribute('aria-activedescendant');
+}
+
+// ===== Keyboard navigation for autocomplete (a11y) =====
+function wireKeyboardNav(input, target) {
+    if (!input || !target) return;
+    input.addEventListener('keydown', (e) => {
+        const options = Array.from(target.querySelectorAll('[role="option"]'));
+        if (!options.length || target.classList.contains('hidden')) {
+            if (e.key === 'Escape') target.classList.add('hidden');
+            return;
+        }
+        let active = options.findIndex((o) => o.getAttribute('aria-selected') === 'true');
+
+        const setActive = (idx) => {
+            options.forEach((o) => o.setAttribute('aria-selected', 'false'));
+            options.forEach((o) => o.classList.remove('bg-gray-50'));
+            if (idx >= 0 && idx < options.length) {
+                const opt = options[idx];
+                opt.setAttribute('aria-selected', 'true');
+                opt.classList.add('bg-gray-50');
+                opt.scrollIntoView({block: 'nearest'});
+                input.setAttribute('aria-activedescendant', opt.id);
+            }
+        };
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActive((active + 1) % options.length);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActive((active - 1 + options.length) % options.length);
+        } else if (e.key === 'Enter' && active >= 0) {
+            e.preventDefault();
+            options[active].click();
+        } else if (e.key === 'Escape') {
+            target.classList.add('hidden');
+            input.setAttribute('aria-expanded', 'false');
+            input.removeAttribute('aria-activedescendant');
+        }
+    });
 }
 
 searchInput?.addEventListener('input', debounce(() => {
@@ -121,6 +170,9 @@ ownerInput?.addEventListener('input', debounce(() => {
     loadSuggestions(ownerInput, ownerSuggestions, '/htmx/owners');
 }));
 
+wireKeyboardNav(searchInput, suggestions);
+wireKeyboardNav(ownerInput, ownerSuggestions);
+
 document.addEventListener('click', async (e) => {
     const button = e.target.closest(
         '#suggestions button[data-select-url], #owner-suggestions button[data-select-url]'
@@ -129,8 +181,17 @@ document.addEventListener('click', async (e) => {
 
     e.preventDefault();
     const url = button.dataset.selectUrl;
-    const response = await fetch(url, {headers: {'HX-Request': 'true'}});
-    if (!response.ok) return;
+    let response;
+    try {
+        response = await fetch(url, {headers: {'HX-Request': 'true'}});
+    } catch {
+        showNearMeError('ഡാറ്റ ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല', 'നെറ്റ്‌വർക്ക് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.');
+        return;
+    }
+    if (!response.ok) {
+        showNearMeError('ഡാറ്റ ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല', 'വീണ്ടും ശ്രമിക്കുക.');
+        return;
+    }
 
     resultsSection.innerHTML = await response.text();
     resultsSection.classList.remove('hidden');
@@ -194,8 +255,17 @@ talukSelect?.addEventListener('change', async () => {
         tso_code: talukSelect.value,
         district: districtSelect.value
     });
-    const response = await fetch(`/htmx/shops?${params}`, {headers: {'HX-Request': 'true'}});
-    if (!response.ok) return;
+    let response;
+    try {
+        response = await fetch(`/htmx/shops?${params}`, {headers: {'HX-Request': 'true'}});
+    } catch {
+        showNearMeError('കടകൾ ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല', 'നെറ്റ്‌വർക്ക് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.');
+        return;
+    }
+    if (!response.ok) {
+        showNearMeError('കടകൾ ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല', 'വീണ്ടും ശ്രമിക്കുക.');
+        return;
+    }
     resultsSection.innerHTML = await response.text();
 });
 

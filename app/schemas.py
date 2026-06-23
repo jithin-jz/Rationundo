@@ -3,15 +3,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
-class PincodeResult(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    pincode: str
-    post_office_name: str
-    district: str
-
-
 class Suggestion(BaseModel):
     type: str  # "place" or "shop"
     id: int
