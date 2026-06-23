@@ -4,7 +4,7 @@ name: Keep Render awake
 # /health is a lightweight DB + freshness check, ideal as a ping target.
 on:
   schedule:
-    - cron: "*/14 * * * *"   # every 14 minutes
+    - cron: "*/10 * * * *"   # every 10 minutes
   workflow_dispatch:          # allow manual runs
 
 jobs:
