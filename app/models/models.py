@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.worker.time_utils import now_ist_naive
 
 
 class Pincode(Base):
@@ -49,6 +48,8 @@ class RationShop(Base):
     __table_args__ = (
         Index("idx_shop_tso", "tso_code"),
         Index("idx_shop_district", "district"),
+        # Speeds up the "near me" bounding-box prefilter before haversine.
+        Index("idx_shop_latlon", "latitude", "longitude"),
     )
 
 
@@ -57,7 +58,7 @@ class ShopStockStatus(Base):
 
     id = Column(Integer, primary_key=True)
     shop_id = Column(Integer, ForeignKey("ration_shops.id"), nullable=False)
-    last_checked_timestamp = Column(DateTime, default=datetime.utcnow)
+    last_checked_timestamp = Column(DateTime, default=now_ist_naive)
     is_stock_delivered = Column(Boolean, default=False)
     month_cycle = Column(String(20), nullable=False)  # e.g. "May 2026"
 
@@ -78,3 +79,5 @@ class StockItem(Base):
     arrival_timestamp = Column(DateTime, nullable=True)
 
     stock_status = relationship("ShopStockStatus", back_populates="items")
+
+    __table_args__ = (Index("idx_stockitem_status", "stock_status_id"),)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from sqlalchemy import Row, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -47,6 +49,14 @@ async def shops_near(
     limit: int,
 ) -> list[Row]:
     """Return (RationShop, distance_km) within radius, nearest first."""
+    # Cheap bounding box first (uses idx_shop_latlon) so haversine only runs on
+    # candidates near the point, not every shop in the state. The box is a
+    # superset of the radius circle, so the exact `dist <= radius_km` below
+    # still does the precise filtering.
+    lat_delta = radius_km / 111.0
+    cos_lat = math.cos(math.radians(lat))
+    lon_delta = radius_km / (111.0 * cos_lat) if cos_lat else 180.0
+
     dist = 12742 * func.asin(
         func.sqrt(
             0.5
@@ -62,6 +72,8 @@ async def shops_near(
         .where(
             RationShop.latitude.isnot(None),
             RationShop.longitude.isnot(None),
+            RationShop.latitude.between(lat - lat_delta, lat + lat_delta),
+            RationShop.longitude.between(lon - lon_delta, lon + lon_delta),
             dist <= radius_km,
         )
         .options(selectinload(RationShop.stock_statuses).selectinload(ShopStockStatus.items))

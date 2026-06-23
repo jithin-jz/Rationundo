@@ -25,7 +25,7 @@ async def fetch_with_client(
 ) -> dict | None:
     """
     Fetch stock for one shop reusing a shared client (keep-alive connection pool).
-    Much faster than fetch_shop_stock for bulk runs. Small jitter stays polite.
+    Reuses a shared client for bulk runs. Small jitter stays polite.
     """
     await asyncio.sleep(random.uniform(*jitter))
     try:
@@ -44,35 +44,6 @@ async def fetch_with_client(
     except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
         logger.error(f"Network error for {fps_id}: {e}")
         return None
-
-
-async def fetch_shop_stock(fps_id: str, month: int, year: int) -> dict | None:
-    """
-    Fetch stock status for a single FPS shop from epos portal.
-    Returns parsed result dict or None on failure.
-    """
-    await asyncio.sleep(random.uniform(1.5, 4.0))
-
-    async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=30.0) as client:
-        try:
-            resp = await client.post(
-                BASE_URL,
-                data={
-                    "fps_id": fps_id,
-                    "month": str(month),
-                    "year": str(year),
-                    "rotype": "PDS",
-                },
-            )
-            if resp.status_code != 200:
-                logger.warning(f"POST failed for {fps_id}: {resp.status_code}")
-                return None
-
-            return _parse_stock_response(resp.text)
-
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
-            logger.error(f"Network error for {fps_id}: {e}")
-            return None
 
 
 def _parse_stock_response(html: str) -> dict | None:

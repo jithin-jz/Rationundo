@@ -17,6 +17,9 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 router = APIRouter(prefix="/htmx")
 
+# Districts/taluks/stats only change once per daily scrape — let clients cache them.
+_DAILY_CACHE = "public, max-age=3600"
+
 # Commodity name translations (shared with JS version)
 COMMODITY_ML = {
     "Fort.RR": "ഫോർട്ടിഫൈഡ് റോ റൈസ്",
@@ -198,10 +201,12 @@ async def htmx_districts(
     db: AsyncSession = Depends(get_db),
 ):
     districts = await shop_service.districts(db)
-    return templates.TemplateResponse(
+    resp = templates.TemplateResponse(
         "partials/_districts.html",
         {"request": request, "districts": districts},
     )
+    resp.headers["Cache-Control"] = _DAILY_CACHE
+    return resp
 
 
 @router.get("/taluks", response_class=HTMLResponse)
@@ -211,10 +216,12 @@ async def htmx_taluks(
     db: AsyncSession = Depends(get_db),
 ):
     taluks = await shop_service.taluks(db, district)
-    return templates.TemplateResponse(
+    resp = templates.TemplateResponse(
         "partials/_taluks.html",
         {"request": request, "taluks": taluks},
     )
+    resp.headers["Cache-Control"] = _DAILY_CACHE
+    return resp
 
 
 # ---- Shops by taluk ----
@@ -277,7 +284,9 @@ async def htmx_stats(
     db: AsyncSession = Depends(get_db),
 ):
     stats = await shop_service.stats(db)
-    return templates.TemplateResponse(
+    resp = templates.TemplateResponse(
         "partials/_stats.html",
         {"request": request, "stats": stats},
     )
+    resp.headers["Cache-Control"] = _DAILY_CACHE
+    return resp

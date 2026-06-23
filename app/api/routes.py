@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -6,6 +6,9 @@ from app.schemas import SearchResponse, ShopStatusOut, Suggestion
 from app.services import shops as shop_service
 
 router = APIRouter(prefix="/api")
+
+# Districts/taluks/stats only change once per daily scrape — let clients cache them.
+_DAILY_CACHE = "public, max-age=3600"
 
 
 @router.get("/autocomplete", response_model=list[Suggestion])
@@ -27,20 +30,23 @@ async def owners(
 
 
 @router.get("/stats")
-async def get_stats(db: AsyncSession = Depends(get_db)):
+async def get_stats(response: Response, db: AsyncSession = Depends(get_db)):
     """Real counts for the landing page."""
+    response.headers["Cache-Control"] = _DAILY_CACHE
     return await shop_service.stats(db)
 
 
 @router.get("/districts", response_model=list[str])
-async def get_districts(db: AsyncSession = Depends(get_db)):
+async def get_districts(response: Response, db: AsyncSession = Depends(get_db)):
     """List all districts."""
+    response.headers["Cache-Control"] = _DAILY_CACHE
     return await shop_service.districts(db)
 
 
 @router.get("/taluks")
-async def get_taluks(district: str, db: AsyncSession = Depends(get_db)):
+async def get_taluks(district: str, response: Response, db: AsyncSession = Depends(get_db)):
     """List taluks/offices for a district."""
+    response.headers["Cache-Control"] = _DAILY_CACHE
     return await shop_service.taluks(db, district)
 
 

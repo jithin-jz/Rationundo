@@ -88,7 +88,6 @@ app/
 ├── models/models.py   # SQLAlchemy ORM models
 └── worker/
     ├── scraper.py     # ePOS fetch + parser helpers
-    ├── tasks.py       # Sequential scrape helper
     └── time_utils.py  # IST month-cycle helpers
 scripts/
 ├── seed_pincodes.py    # Load pincode master data
