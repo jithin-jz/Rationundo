@@ -61,16 +61,13 @@ _CSP_DIRECTIVES = [
     "worker-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self'",
     "form-action 'self'",
 ]
 
 
 def _content_security_policy(request: Request) -> str:
-    directives = list(_CSP_DIRECTIVES)
-    if request.url.hostname in {"127.0.0.1", "localhost"}:
-        directives.remove("frame-ancestors 'none'")
-    return "; ".join(directives)
+    return "; ".join(_CSP_DIRECTIVES)
 
 
 @app.middleware("http")
