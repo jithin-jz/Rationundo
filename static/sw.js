@@ -47,7 +47,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE).then((cache) => cache.put(e.request, response.clone()));
         }
         return response;
-      }).catch(() => hit || Response.error());
+      }).catch(() => hit || new Response('Offline', { status: 503, statusText: 'Service Unavailable' }));
       return hit || fresh;
     })
   );

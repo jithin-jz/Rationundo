@@ -55,7 +55,7 @@ _CSP_DIRECTIVES = [
     (
         "connect-src 'self' https://www.google-analytics.com "
         "https://region1.google-analytics.com https://analytics.google.com "
-        "https://www.googletagmanager.com"
+        "https://www.googletagmanager.com https://cdn.jsdelivr.net"
     ),
     "manifest-src 'self'",
     "worker-src 'self'",
