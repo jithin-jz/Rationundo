@@ -1,7 +1,8 @@
 # റേഷൻ ഉണ്ടോ? · RationUndo
 
-> Has your ration shop received stock this month?
-> Kerala's Fair Price Shop stock delivery tracker.
+> Track whether your Kerala ration shop (Fair Price Shop) has received its monthly stock allocation — rice, wheat, sugar, kerosene, and more.
+> Search by shop number, place name, or owner. Browse by district and taluk. Use GPS to find the nearest shops.
+> Data scraped daily from the official [epos.kerala.gov.in](https://epos.kerala.gov.in) portal and served fast from a local database.
 
 <div align="center">
 
