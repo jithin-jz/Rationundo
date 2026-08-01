@@ -1,111 +1,128 @@
-# RationUndo · റേഷൻ ഉണ്ടോ?
+﻿# റേഷൻ ഉണ്ടോ? · RationUndo
 
-Track ration shop (Fair Price Shop) stock delivery status for Kerala citizens check if this month's commodities (rice, wheat, sugar, etc.) have arrived at your shop.
+> Has your ration shop received stock this month?
+> Kerala's Fair Price Shop stock delivery tracker — fast, offline-ready, Malayalam-first.
 
-🔗 Live: [rationundo.onrender.com](https://rationundo.onrender.com)
+🔗 **[rationundo.onrender.com](https://rationundo.onrender.com)**
+
+---
 
 ## How it works
 
-- The official portal (`epos.kerala.gov.in`) is slow and indexes data only by District → Taluk → Shop number.
-- A daily scraper pulls all shop stock data into PostgreSQL.
-- The web app serves every user search from the local DB **zero external calls at request time**, sub-200ms responses.
+```mermaid
+flowchart LR
+    A([epos.kerala.gov.in]) -->|daily scrape 2 AM IST| B[(PostgreSQL Supabase)]
+    B -->|sub-200ms| C([FastAPI])
+    C -->|HTMX fragments| D([Browser])
 
+    style A fill:#e8f5e9,stroke:#2e7d32
+    style B fill:#e3f2fd,stroke:#1565c0
+    style C fill:#fff3e0,stroke:#e65100
+    style D fill:#f3e5f5,stroke:#6a1b9a
 ```
-User → FastAPI → PostgreSQL (Supabase) → Response
-                       ↑
-   GitHub Actions (daily 2 AM IST) → httpx scraper → epos.kerala.gov.in
+
+A **GitHub Actions cron** scrapes the official ePOS portal once a day and stores every shop's stock status in PostgreSQL. User searches are served entirely from the local DB — no external calls at request time.
+
+---
+
+## Data flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant SW as Service Worker
+    participant API as FastAPI
+    participant DB as PostgreSQL
+
+    U->>SW: Open app / search shop
+    SW->>API: GET /htmx/select?type=shop&id=...
+    API->>DB: SELECT by ARD number
+    DB-->>API: shop + stock rows
+    API-->>SW: HTML fragment (Jinja2)
+    SW-->>U: Rendered card (< 200ms)
+
+    note over SW: Shell cached offline<br/>API always fresh
 ```
+
+---
 
 ## Features
 
-- Search by **shop number**, **pincode**, or **place name** (fuzzy autocomplete via `pg_trgm`)
-- **Near me** GPS search nearest shops sorted by distance (km) via haversine
-- Browse by **District → Taluk → Shop**
-- Per-commodity allocated vs received quantities with progress bars
-- Malayalam-first UI
-- **Installable PWA** with offline app shell (service worker)
-- Covers all 14 districts · 14,000+ shops · 5,000+ pincodes
+| | |
+|---|---|
+| 🔍 | Search by **shop number**, **place name**, or **owner name** (fuzzy `pg_trgm`) |
+| 📍 | **Near me** — GPS search, haversine distance sort |
+| 🗺️ | Browse **District → Taluk → Shop** |
+| ⭐ | **Bookmark** favourite shops (localStorage) |
+| 📊 | Per-commodity allocated vs received quantities |
+| 📲 | **Share** shop link via native share / WhatsApp |
+| 🔌 | **PWA** — installable, offline shell via service worker |
+| 🌐 | Malayalam-first UI |
 
-## Tech stack
+Covers **14 districts · 14,000+ shops · 5,000+ pincodes** across Kerala.
 
-- **Backend:** FastAPI + SQLAlchemy (async) + asyncpg
-- **Database:** PostgreSQL with `pg_trgm` (Supabase in production)
-- **Scraper:** httpx + BeautifulSoup, run as a daily GitHub Actions cron
-- **Frontend:** TailwindCSS, vanilla JS
-- **Hosting:** Render (web) + Supabase (DB) + GitHub Actions (scraper) all free tier
+---
 
-## Local development
+## Stack
+
+```
+Frontend    TailwindCSS (browser) · HTMX · Vanilla JS · Service Worker
+Backend     FastAPI · SQLAlchemy (async) · asyncpg
+Database    PostgreSQL + pg_trgm  (Supabase, free tier)
+Scraper     httpx + BeautifulSoup · GitHub Actions cron (2 AM IST)
+Hosting     Render (web) · Supabase (DB) · GitHub Actions (scraper)
+```
+
+---
+
+## Local setup
 
 ```bash
-# 1. Start local Postgres (port 5433)
+# 1. Start local Postgres
 docker compose up -d
 
-# 2. Install deps
+# 2. Install dependencies
 pip install -e .
 
-# 3. Create tables
+# 3. Run migrations
 alembic upgrade head
 
-# 4. Seed pincodes (downloads Kerala data from open dataset)
-python scripts/seed_pincodes.py
+# 4-6. Seed data (one-time)
+python scripts/seed_pincodes.py      # pincode master data
+python scripts/discover_shops.py     # build shop registry
+python scripts/fuzzy_match.py        # link shops to pincodes
 
-# 5. Discover all shops (one-time; District → Taluk → Shop)
-python scripts/discover_shops.py
-
-# 6. Link shops to pincodes (fuzzy match)
-python scripts/fuzzy_match.py
-
-# 7. Scrape stock data
+# 7. Scrape today's stock
 python scripts/scrape_all.py
 
-# 8. Run the server
+# 8. Start the server
 uvicorn app.main:app --reload --port 8000
 ```
 
-Configure `.env` from `.env.example` (set `DATABASE_URL`).
+Copy `.env.example` -> `.env` and set `DATABASE_URL`.
 
-## Deployment
+For deployment see [DEPLOY.md](DEPLOY.md).
 
-See [DEPLOY.md](DEPLOY.md) for the full Supabase + Render + GitHub Actions setup.
+---
 
-The scraper runs automatically every day at 2 AM IST via GitHub Actions
-(`.github/workflows/scrape.yml`). It refreshes pending/partial shops, skips
-fully-received ones, and prunes data older than 3 months. Manual workflow runs
-can run only the daily scrape, only the weekly geo refresh, or both.
-
-## Project structure
+## Project layout
 
 ```
 app/
-├── main.py            # FastAPI app entry + /health
-├── config.py          # Settings (pydantic-settings)
-├── database.py        # Async engine (Supabase pooler-aware)
-├── schemas.py         # Pydantic response models
-├── api/routes.py      # Thin JSON API endpoints
-├── api/htmx_routes.py # Thin HTMX fragment endpoints
-├── services/          # Business logic shared by API, HTMX, and workers
-├── repositories/      # Database query helpers
-├── models/models.py   # SQLAlchemy ORM models
-└── worker/
-    ├── scraper.py     # ePOS fetch + parser helpers
-    └── time_utils.py  # IST month-cycle helpers
-scripts/
-├── seed_pincodes.py    # Load pincode master data
-├── discover_shops.py   # One-time shop registry builder
-├── fuzzy_match.py      # Link shops to pincodes
-├── scrape_all.py       # Daily stock scraper (used by CI cron)
-├── sync_to_supabase.py # One-time local → Supabase migration
-└── verify.py           # DB + API smoke test
-templates/              # Page shell + HTMX partials
-static/                 # app.js, service worker, manifest, favicon.svg
+├── api/htmx_routes.py   HTMX fragment endpoints
+├── services/            Business logic
+├── repositories/        DB query helpers
+├── models/models.py     SQLAlchemy ORM
+└── worker/scraper.py    ePOS scraper + parser
+
+scripts/                 One-time setup & daily cron scripts
+templates/               Page shell + Jinja2 partials
+static/                  app.js · sw.js · manifest · favicon
 ```
 
-## Disclaimer
+---
 
-Not affiliated with the Government of Kerala. Data sourced from the public
-`epos.kerala.gov.in` portal. Some shop data may be unavailable or incomplete
-contact your ration shop for the most accurate information.
-
-## License
+> Data sourced from the public [epos.kerala.gov.in](https://epos.kerala.gov.in) portal.
+> Not affiliated with the Government of Kerala.
 
 [MIT](LICENSE) © 2026 Jithin
