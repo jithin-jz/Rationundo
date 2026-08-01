@@ -5,7 +5,10 @@
 
 **[rationundo.onrender.com](https://rationundo.onrender.com)**
 
+![RationUndo app screenshot](docs/rationundo.png)
+
 ---
+
 
 ## How it works
 
