@@ -3,11 +3,11 @@
 > Has your ration shop received stock this month?
 > Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
 
-**[rationundo.onrender.com](https://rationundo.onrender.com)**
 
 ![RationUndo app screenshot](docs/rationundo.png)
 
 ---
+
 
 
 ## How it works
