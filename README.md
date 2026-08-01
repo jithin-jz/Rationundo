@@ -3,7 +3,7 @@
 > Has your ration shop received stock this month?
 > Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
 
-🔗 **[rationundo.onrender.com](https://rationundo.onrender.com)**
+**[rationundo.onrender.com](https://rationundo.onrender.com)**
 
 ---
 
@@ -48,14 +48,14 @@ sequenceDiagram
 
 ## Features
 
-- 🔍 Search by **shop number**, **place name**, or **owner name** (fuzzy `pg_trgm`)
-- 📍 **Near me** GPS search, haversine distance sort
-- 🗺️ Browse **District > Taluk > Shop**
-- ⭐ **Bookmark** favourite shops (localStorage)
-- 📊 Per-commodity allocated vs received quantities
-- 📲 **Share** shop link via native share / WhatsApp
-- 🔌 **PWA** installable, offline shell via service worker
-- 🌐 Malayalam-first UI
+- Search by **shop number**, **place name**, or **owner name** (fuzzy `pg_trgm`)
+- **Near me** GPS search, haversine distance sort
+- Browse **District > Taluk > Shop**
+- **Bookmark** favourite shops (localStorage)
+- Per-commodity allocated vs received quantities
+- **Share** shop link via native share / WhatsApp
+- **PWA** installable, offline shell via service worker
+- Malayalam-first UI
 
 Covers **14 districts · 14,000+ shops · 5,000+ pincodes** across Kerala.
 
