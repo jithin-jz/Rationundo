@@ -3,6 +3,8 @@
 > Has your ration shop received stock this month?
 > Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
 
+<div align="center">
+
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
@@ -11,6 +13,8 @@
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=githubactions&logoColor=white)
 ![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=white)
+
+</div>
 
 ![RationUndo app screenshot](docs/rationundo.png)
 
@@ -73,4 +77,8 @@ Covers **14 districts · 14,000+ shops · 5,000+ pincodes** across Kerala.
 > Data sourced from the public [epos.kerala.gov.in](https://epos.kerala.gov.in) portal.
 > Not affiliated with the Government of Kerala.
 
+<div align="center">
+
 [![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE) © 2026 Jithin
+
+</div>
