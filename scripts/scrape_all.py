@@ -50,8 +50,11 @@ def cleanup_old_months(keep: int = 3):
         if m == 0:
             m, y = 12, y - 1
 
+    # Step 1: delete child rows (stock_items) in its own transaction.
+    # Committing first releases all row locks before the parent delete,
+    # avoiding FK key-share lock contention that causes statement timeouts.
     with Session() as db:
-        # Delete items then statuses for any month_cycle not in keep list
+        db.execute(text("SET LOCAL statement_timeout = 0"))
         db.execute(
             text(
                 """
@@ -63,6 +66,11 @@ def cleanup_old_months(keep: int = 3):
             ).bindparams(bindparam("keep", expanding=True)),
             {"keep": keep_cycles},
         )
+        db.commit()
+
+    # Step 2: delete parent rows (shop_stock_status) in a fresh transaction.
+    with Session() as db:
+        db.execute(text("SET LOCAL statement_timeout = 0"))
         res = db.execute(
             text("DELETE FROM shop_stock_status WHERE month_cycle NOT IN :keep").bindparams(
                 bindparam("keep", expanding=True)
