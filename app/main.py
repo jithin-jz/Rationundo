@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from sqlalchemy import text
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.htmx_routes import router as htmx_router
 from app.api.routes import router as api_router
@@ -25,11 +26,22 @@ app = FastAPI(title="RationUndo", version="0.1.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        if request.url.path.startswith("/api/"):
+            return JSONResponse(status_code=404, content={"detail": exc.detail or "Not Found"})
+        return templates.TemplateResponse(request, "404.html", status_code=404)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
 app.include_router(api_router)
 app.include_router(htmx_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 _CSP_DIRECTIVES = [
     "default-src 'self'",
