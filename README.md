@@ -1,7 +1,7 @@
 # റേഷൻ ഉണ്ടോ? · RationUndo
 
 > Has your ration shop received stock this month?
-> Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
+> Kerala's Fair Price Shop stock delivery tracker.
 
 <div align="center">
 
