@@ -1,14 +1,20 @@
-# റേഷൻ ഉണ്ടോ? · RationUndo
+﻿# റേഷൻ ഉണ്ടോ? · RationUndo
 
 > Has your ration shop received stock this month?
 > Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
 
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
+![HTMX](https://img.shields.io/badge/HTMX-36C?style=flat&logo=htmx&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=githubactions&logoColor=white)
+![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=white)
 
 ![RationUndo app screenshot](docs/rationundo.png)
 
 ---
-
-
 
 ## How it works
 
@@ -63,19 +69,6 @@ sequenceDiagram
 Covers **14 districts · 14,000+ shops · 5,000+ pincodes** across Kerala.
 
 ---
-
-## Stack
-
-```
-Frontend    TailwindCSS (browser) · HTMX · Vanilla JS · Service Worker
-Backend     FastAPI · SQLAlchemy (async) · asyncpg
-Database    PostgreSQL + pg_trgm  (Supabase, free tier)
-Scraper     httpx + BeautifulSoup · GitHub Actions cron (2 AM IST)
-Hosting     Render (web) · Supabase (DB) · GitHub Actions (scraper)
-```
-
-
-
 
 > Data sourced from the public [epos.kerala.gov.in](https://epos.kerala.gov.in) portal.
 > Not affiliated with the Government of Kerala.
