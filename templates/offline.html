@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ഓഫ്‌ലൈൻ | റേഷൻ ഉണ്ടോ?</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <meta name="theme-color" content="#0D3B14">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-kerala-gold: #D4A843;
+            --color-kerala-green: #1B5E20;
+            --color-kerala-darkgreen: #0D3B14;
+            --color-kerala-cream: #FAFAF6;
+        }
+        @layer base {
+            body { font-family: 'DM Sans', 'Noto Sans Malayalam', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        }
+        @utility malayalam { font-family: 'Noto Sans Malayalam', 'DM Sans', sans-serif; }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .animate-pulse-slow { animation: pulse-slow 2.5s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-kerala-cream text-gray-900 min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="bg-kerala-darkgreen text-white">
+        <div class="max-w-2xl mx-auto px-4 py-6 text-center">
+            <h1 class="text-3xl font-extrabold text-white tracking-tight malayalam">റേഷൻ <span class="text-kerala-gold">ഉണ്ടോ?</span></h1>
+            <p class="text-green-400/60 text-[10px] mt-1 tracking-wide">RATIONUNDO · KERALA STOCK DELIVERY TRACKER</p>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="max-w-2xl mx-auto px-4 py-16 flex-1 flex flex-col items-center justify-center text-center">
+
+        <!-- Animated Wi-Fi off icon -->
+        <div class="w-24 h-24 rounded-3xl bg-gray-100 flex items-center justify-center mb-6 animate-pulse-slow">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M3 3l18 18M8.111 8.111A8.933 8.933 0 005.6 10.5M12 12.5a3 3 0 012.83 2M19.4 10.5a8.933 8.933 0 00-2.511-1.889M12 6a11.962 11.962 0 016.5 1.924"/>
+            </svg>
+        </div>
+
+        <span class="inline-block px-3 py-1 bg-gray-200 text-gray-600 text-xs font-bold rounded-full mb-3 tracking-wider uppercase">
+            Offline
+        </span>
+
+        <h2 class="text-2xl font-extrabold text-gray-900 malayalam mb-2">
+            ഇന്റർനെറ്റ് ബന്ധം ഇല്ല
+        </h2>
+        <p class="text-sm text-gray-500 max-w-sm mb-8 leading-relaxed malayalam">
+            നിങ്ങൾ ഇപ്പോൾ ഓഫ്‌ലൈൻ ആണ്. ഇന്റർനെറ്റ് ബന്ധം ലഭിച്ചതിന് ശേഷം വീണ്ടും ശ്രമിക്കുക.
+        </p>
+
+        <!-- Retry button -->
+        <button onclick="location.reload()"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-kerala-green hover:bg-kerala-darkgreen text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow transition-all duration-200 malayalam">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            വീണ്ടും ശ്രമിക്കുക
+        </button>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200/60">
+        <div class="max-w-2xl mx-auto px-4 py-5 text-center">
+            <p class="text-xs text-gray-400 malayalam">ഇന്റർനെറ്റ് ബന്ധം പുനഃസ്ഥാപിക്കുക</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -99,6 +99,11 @@ async def manifest():
     return FileResponse(STATIC_DIR / "manifest.json", media_type="application/manifest+json")
 
 
+@app.get("/offline")
+async def offline(request: Request):
+    return templates.TemplateResponse(request, "offline.html")
+
+
 @app.get("/health")
 async def health():
     try:

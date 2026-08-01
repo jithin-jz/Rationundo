@@ -1,8 +1,9 @@
 // Shell-only service worker. NEVER caches /api/ or /htmx/ — stock data must always be fresh.
-const CACHE = 'rationundo-shell-v12';
+const CACHE = 'rationundo-shell-v13';
 const SHELL = [
   '/',
-  '/static/app.js?v=9',
+  '/offline',
+  '/static/app.js?v=10',
   '/static/favicon.svg',
   '/static/manifest.json',
 ];
@@ -23,16 +24,19 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   // Bypass cross-origin requests, API, HTMX partials, and non-GET:
-  // let the browser handle CSP for third-party scripts, fonts, analytics, and images.
   if (
     url.origin !== self.location.origin ||
     e.request.method !== 'GET' ||
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/htmx/')
   ) return;
-  // HTML ('/'): network-first so updates show.
+  // HTML navigation: network-first, fall back to /offline page.
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request).catch(() => caches.match('/')));
+    e.respondWith(
+      fetch(e.request).catch(() =>
+        caches.match('/offline').then((r) => r || caches.match('/'))
+      )
+    );
     return;
   }
   // Static shell assets: stale-while-revalidate.

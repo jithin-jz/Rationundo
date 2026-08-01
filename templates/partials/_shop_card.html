@@ -1,30 +1,47 @@
 {% set state = shop.delivery_state or ('full' if shop.is_stock_delivered else 'none') %}
 {% set card_class = 'card-delivered' if state == 'full' else ('card-partial' if state == 'partial' else 'card-pending') %}
 
-<div class="{{ card_class }} rounded-xl shadow-sm border border-gray-100 p-4 animate-slide-up" style="animation-delay: {{ loop_index * 40 }}ms; opacity: 0">
+<div class="{{ card_class }} rounded-xl shadow-sm border border-gray-100 p-4 animate-slide-up" style="animation-delay: {{ loop_index * 40 }}ms; opacity: 0"
+     data-shop-ard="{{ shop.ard_number }}"
+     data-shop-name="{{ shop.dealer_name or '' }}"
+     data-shop-district="{{ shop.district }}">
     <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
             <p class="font-bold text-gray-900">കട നം. {{ shop.ard_number }}</p>
             <p class="text-xs text-gray-500 mt-0.5">
                 {{ shop.dealer_name or '' }} · {% if shop.local_place %}{{ shop.local_place }}, {% endif %}{{ shop.district }} · {{ shop.month_cycle }}{% if shop.distance_km is not none %} · 📍 {{ "%.1f"|format(shop.distance_km) }} km{% endif %}
             </p>
         </div>
-        {% if state == 'full' %}
-        <div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50">
-            <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-            <span class="text-xs sm:text-sm font-semibold text-green-800 malayalam whitespace-nowrap">സ്റ്റോക്ക് എത്തി ✓</span>
+        <div class="shrink-0 flex items-center gap-1.5">
+            {% if state == 'full' %}
+            <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50">
+                <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                <span class="text-xs sm:text-sm font-semibold text-green-800 malayalam whitespace-nowrap">സ്റ്റോക്ക് എത്തി ✓</span>
+            </div>
+            {% elif state == 'partial' %}
+            <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                <span class="text-xs sm:text-sm font-semibold text-amber-800 malayalam whitespace-nowrap">ഭാഗികമായി എത്തി</span>
+            </div>
+            {% else %}
+            <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
+                <span class="text-xs sm:text-sm font-semibold text-amber-800 malayalam whitespace-nowrap">എത്തിയിട്ടില്ല</span>
+            </div>
+            {% endif %}
+            <!-- Share button -->
+            <button class="btn-share p-1.5 rounded-lg text-gray-400 hover:text-kerala-green hover:bg-gray-100 transition-colors"
+                    aria-label="Share shop"
+                    title="Share">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+            </button>
+            <!-- Favourite button -->
+            <button class="btn-fav p-1.5 rounded-lg text-gray-300 hover:text-amber-400 hover:bg-gray-100 transition-colors"
+                    aria-label="Save shop"
+                    title="Save">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+            </button>
         </div>
-        {% elif state == 'partial' %}
-        <div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
-            <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
-            <span class="text-xs sm:text-sm font-semibold text-amber-800 malayalam whitespace-nowrap">ഭാഗികമായി എത്തി</span>
-        </div>
-        {% else %}
-        <div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50">
-            <div class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
-            <span class="text-xs sm:text-sm font-semibold text-amber-800 malayalam whitespace-nowrap">എത്തിയിട്ടില്ല</span>
-        </div>
-        {% endif %}
     </div>
 
     {% if shop.items %}

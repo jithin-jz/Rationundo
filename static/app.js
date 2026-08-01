@@ -347,3 +347,126 @@ document.addEventListener('htmx:afterSwap', (e) => {
         htmx.ajax('GET', `/htmx/select?type=place&id=${encodeURIComponent(placeId)}`, {target: '#results', swap: 'innerHTML'});
     }
 })();
+
+
+// ===== ⭐ Favorites (localStorage) =====
+const FAV_KEY = 'rationundo_favs';
+const savedShopsSection = document.getElementById('saved-shops');
+const savedShopsList = document.getElementById('saved-shops-list');
+const clearFavsBtn = document.getElementById('clear-favs-btn');
+
+function getFavs() {
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch { return []; }
+}
+
+function saveFavs(favs) {
+    localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+}
+
+function isFav(ard) {
+    return getFavs().some(f => f.ard === ard);
+}
+
+function toggleFav(ard, name, district) {
+    let favs = getFavs();
+    const idx = favs.findIndex(f => f.ard === ard);
+    if (idx >= 0) {
+        favs.splice(idx, 1);
+    } else {
+        favs.unshift({ ard, name, district, url: `/?shop=${encodeURIComponent(ard)}` });
+    }
+    saveFavs(favs);
+    renderSavedShops();
+    syncFavButtons();
+}
+
+function renderSavedShops() {
+    const favs = getFavs();
+    if (!savedShopsSection || !savedShopsList) return;
+    if (!favs.length) {
+        savedShopsSection.classList.add('hidden');
+        return;
+    }
+    savedShopsSection.classList.remove('hidden');
+    savedShopsList.innerHTML = favs.map(f => `
+        <button class="fav-chip inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-lg text-xs font-semibold transition-colors"
+                data-fav-ard="${f.ard}" title="കട നം. ${f.ard}">
+            <svg class="w-3 h-3 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+            <span>കട ${f.ard}${f.name ? ' · ' + f.name.split(' ')[0] : ''}</span>
+        </button>
+    `).join('');
+}
+
+function syncFavButtons() {
+    document.querySelectorAll('[data-shop-ard]').forEach(card => {
+        const ard = card.dataset.shopArd;
+        const btn = card.querySelector('.btn-fav svg');
+        if (!btn) return;
+        if (isFav(ard)) {
+            btn.style.color = '#FBBF24'; // amber-400
+        } else {
+            btn.style.color = '';
+        }
+    });
+}
+
+// Tap a saved chip → load that shop
+savedShopsList?.addEventListener('click', (e) => {
+    const chip = e.target.closest('.fav-chip');
+    if (!chip) return;
+    const ard = chip.dataset.favArd;
+    emptyState.classList.add('hidden');
+    resultsSection.classList.remove('hidden');
+    resultsSection.innerHTML = '<div class="text-center py-16"><div class="inline-block w-8 h-8 border-[3px] border-kerala-green/20 border-t-kerala-green rounded-full animate-spin"></div></div>';
+    htmx.ajax('GET', `/htmx/select?type=shop&id=${encodeURIComponent(ard)}`, {target: '#results', swap: 'innerHTML'});
+    history.replaceState(null, '', `?shop=${encodeURIComponent(ard)}`);
+});
+
+// Clear all favorites
+clearFavsBtn?.addEventListener('click', () => {
+    saveFavs([]);
+    renderSavedShops();
+    syncFavButtons();
+});
+
+// Tap the ⭐ button on a shop card
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-fav');
+    if (!btn) return;
+    const card = btn.closest('[data-shop-ard]');
+    if (!card) return;
+    toggleFav(card.dataset.shopArd, card.dataset.shopName, card.dataset.shopDistrict);
+});
+
+// Re-sync after every HTMX swap
+document.addEventListener('htmx:afterSwap', syncFavButtons);
+
+// Initial render on page load
+renderSavedShops();
+
+
+// ===== 📲 Share =====
+async function handleShare(ard, name, district) {
+    const shopLabel = name ? `${name} (${district})` : `${district}`;
+    const url = `${location.origin}/?shop=${encodeURIComponent(ard)}`;
+    const text = `കട നം. ${ard} — ${shopLabel}\nറേഷൻ ഉണ്ടോ? സ്റ്റോക്ക് സ്റ്റാറ്റസ് ഇവിടെ കാണാം:\n${url}`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: `കട നം. ${ard} | റേഷൻ ഉണ്ടോ?`, text, url });
+            return;
+        } catch (err) {
+            if (err.name === 'AbortError') return; // user cancelled — don't fallback
+        }
+    }
+    // WhatsApp fallback
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+}
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-share');
+    if (!btn) return;
+    const card = btn.closest('[data-shop-ard]');
+    if (!card) return;
+    handleShare(card.dataset.shopArd, card.dataset.shopName, card.dataset.shopDistrict);
+});
