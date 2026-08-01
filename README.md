@@ -1,4 +1,4 @@
-﻿# റേഷൻ ഉണ്ടോ? · RationUndo
+# റേഷൻ ഉണ്ടോ? · RationUndo
 
 > Has your ration shop received stock this month?
 > Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
@@ -73,4 +73,4 @@ Covers **14 districts · 14,000+ shops · 5,000+ pincodes** across Kerala.
 > Data sourced from the public [epos.kerala.gov.in](https://epos.kerala.gov.in) portal.
 > Not affiliated with the Government of Kerala.
 
-[MIT](LICENSE) © 2026 Jithin
+[![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE) © 2026 Jithin
