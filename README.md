@@ -1,6 +1,6 @@
 # റേഷൻ ഉണ്ടോ? · RationUndo
 
-> Track whether your Kerala ration shop has received its monthly stock allocation rice, wheat, sugar, kerosene, and more.
+> Track whether your Kerala ration shop has received its monthly stock allocation rice, wheat, sugar, and more.
 > Search by shop number, place name, or owner. Browse by district and taluk. Use GPS to find the nearest shops.
 
 <div align="center">
@@ -79,6 +79,6 @@ Covers **14 districts · 14,000+ shops · 5,000+ pincodes** across Kerala.
 
 <div align="center">
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE) © 2026 Jithin
+[![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 
 </div>
