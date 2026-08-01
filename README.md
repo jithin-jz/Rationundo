@@ -1,7 +1,7 @@
 ﻿# റേഷൻ ഉണ്ടോ? · RationUndo
 
 > Has your ration shop received stock this month?
-> Kerala's Fair Price Shop stock delivery tracker — fast, offline-ready, Malayalam-first.
+> Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
 
 🔗 **[rationundo.onrender.com](https://rationundo.onrender.com)**
 
@@ -21,7 +21,7 @@ flowchart LR
     style D fill:#f3e5f5,stroke:#6a1b9a
 ```
 
-A **GitHub Actions cron** scrapes the official ePOS portal once a day and stores every shop's stock status in PostgreSQL. User searches are served entirely from the local DB — no external calls at request time.
+A **GitHub Actions cron** scrapes the official ePOS portal once a day and stores every shop's stock status in PostgreSQL. User searches are served entirely from the local DB, no external calls at request time.
 
 ---
 
@@ -48,16 +48,14 @@ sequenceDiagram
 
 ## Features
 
-| | |
-|---|---|
-| 🔍 | Search by **shop number**, **place name**, or **owner name** (fuzzy `pg_trgm`) |
-| 📍 | **Near me** — GPS search, haversine distance sort |
-| 🗺️ | Browse **District → Taluk → Shop** |
-| ⭐ | **Bookmark** favourite shops (localStorage) |
-| 📊 | Per-commodity allocated vs received quantities |
-| 📲 | **Share** shop link via native share / WhatsApp |
-| 🔌 | **PWA** — installable, offline shell via service worker |
-| 🌐 | Malayalam-first UI |
+- 🔍 Search by **shop number**, **place name**, or **owner name** (fuzzy `pg_trgm`)
+- 📍 **Near me** GPS search, haversine distance sort
+- 🗺️ Browse **District > Taluk > Shop**
+- ⭐ **Bookmark** favourite shops (localStorage)
+- 📊 Per-commodity allocated vs received quantities
+- 📲 **Share** shop link via native share / WhatsApp
+- 🔌 **PWA** installable, offline shell via service worker
+- 🌐 Malayalam-first UI
 
 Covers **14 districts · 14,000+ shops · 5,000+ pincodes** across Kerala.
 
@@ -72,36 +70,6 @@ Database    PostgreSQL + pg_trgm  (Supabase, free tier)
 Scraper     httpx + BeautifulSoup · GitHub Actions cron (2 AM IST)
 Hosting     Render (web) · Supabase (DB) · GitHub Actions (scraper)
 ```
-
----
-
-## Local setup
-
-```bash
-# 1. Start local Postgres
-docker compose up -d
-
-# 2. Install dependencies
-pip install -e .
-
-# 3. Run migrations
-alembic upgrade head
-
-# 4-6. Seed data (one-time)
-python scripts/seed_pincodes.py      # pincode master data
-python scripts/discover_shops.py     # build shop registry
-python scripts/fuzzy_match.py        # link shops to pincodes
-
-# 7. Scrape today's stock
-python scripts/scrape_all.py
-
-# 8. Start the server
-uvicorn app.main:app --reload --port 8000
-```
-
-Copy `.env.example` -> `.env` and set `DATABASE_URL`.
-
-For deployment see [DEPLOY.md](DEPLOY.md).
 
 ---
 
