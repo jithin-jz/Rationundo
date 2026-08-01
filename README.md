@@ -1,6 +1,6 @@
 # റേഷൻ ഉണ്ടോ? · RationUndo
 
-> Track whether your Kerala ration shop (Fair Price Shop) has received its monthly stock allocation rice, wheat, sugar, kerosene, and more.
+> Track whether your Kerala ration shop has received its monthly stock allocation rice, wheat, sugar, kerosene, and more.
 > Search by shop number, place name, or owner. Browse by district and taluk. Use GPS to find the nearest shops.
 
 <div align="center">
