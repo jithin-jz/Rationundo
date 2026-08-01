@@ -122,13 +122,15 @@ async def htmx_owners(
 async def htmx_select(
     request: Request,
     selection_type: str = Query(alias="type", pattern="^(shop|place)$"),
-    id: int = Query(ge=1),
+    id: str = Query(min_length=1, max_length=50),
     db: AsyncSession = Depends(get_db),
 ):
     if selection_type == "shop":
         data = await shop_service.shop_status(db, id)
     else:
-        data = await shop_service.pincode_status(db, id)
+        if not id.isdigit():
+            return _empty_response(request)
+        data = await shop_service.pincode_status(db, int(id))
 
     if not data or not data.shops:
         return _empty_response(request)
@@ -153,9 +155,9 @@ async def htmx_feed(
 ):
     """Return the next batch of shop cards for infinite scroll."""
     if feed_type == "shop":
-        if not id.isdigit():
+        if not id:
             return _empty_response(request)
-        data = await shop_service.shop_status(db, int(id))
+        data = await shop_service.shop_status(db, id)
         shops_out = data.shops if data else []
     elif feed_type == "place":
         if not id.isdigit():

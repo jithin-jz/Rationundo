@@ -168,6 +168,15 @@ async def shop_by_id(db: AsyncSession, shop_id: int) -> RationShop | None:
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
+async def shop_by_ard(db: AsyncSession, ard_number: str) -> RationShop | None:
+    stmt = (
+        select(RationShop)
+        .where(RationShop.ard_number == ard_number)
+        .options(selectinload(RationShop.stock_statuses).selectinload(ShopStockStatus.items))
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
 async def pincode_by_id(db: AsyncSession, pincode_id: int) -> Pincode | None:
     return await db.get(Pincode, pincode_id)
 

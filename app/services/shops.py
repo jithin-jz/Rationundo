@@ -132,8 +132,8 @@ async def shops_for_taluk(db: AsyncSession, tso_code: str) -> list[ShopStatusOut
     return [build_shop_out(shop) for shop in shops]
 
 
-async def shop_status(db: AsyncSession, shop_id: int) -> SearchResponse | None:
-    shop = await shop_repo.shop_by_id(db, shop_id)
+async def shop_status(db: AsyncSession, ard_number: str) -> SearchResponse | None:
+    shop = await shop_repo.shop_by_ard(db, ard_number)
     if not shop:
         return None
 
