@@ -1,4 +1,4 @@
-﻿# റേഷൻ ഉണ്ടോ? · RationUndo
+# റേഷൻ ഉണ്ടോ? · RationUndo
 
 > Has your ration shop received stock this month?
 > Kerala's Fair Price Shop stock delivery tracker, fast, offline-ready, Malayalam-first.
@@ -71,24 +71,8 @@ Scraper     httpx + BeautifulSoup · GitHub Actions cron (2 AM IST)
 Hosting     Render (web) · Supabase (DB) · GitHub Actions (scraper)
 ```
 
----
 
-## Project layout
 
-```
-app/
-├── api/htmx_routes.py   HTMX fragment endpoints
-├── services/            Business logic
-├── repositories/        DB query helpers
-├── models/models.py     SQLAlchemy ORM
-└── worker/scraper.py    ePOS scraper + parser
-
-scripts/                 One-time setup & daily cron scripts
-templates/               Page shell + Jinja2 partials
-static/                  app.js · sw.js · manifest · favicon
-```
-
----
 
 > Data sourced from the public [epos.kerala.gov.in](https://epos.kerala.gov.in) portal.
 > Not affiliated with the Government of Kerala.
